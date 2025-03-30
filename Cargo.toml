@@ -1,0 +1,16 @@
+[package]
+name = "robot"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+cxx = { version = "1.0.151", features = ["c++20"] }
+
+[build-dependencies]
+cxx-build = { version = "1.0.151", features = ["parallel"] }
+
+[lib]
+crate-type = ["staticlib"]
+
+[workspace]
+members = ["xtask", "."]
