@@ -185,3 +185,7 @@ compile_commands.json
 
 # Eclipse generated file for annotation processors
 .factorypath
+
+src/main/cpp/ffi.cpp
+src/main/include/ffi.h
+libstatic
