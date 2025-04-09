@@ -31,5 +31,4 @@ public:
 
 private:
 	std::map<uint8_t, std::unique_ptr<spark::SparkMax>> m_motors;
-	std::map<NavXConnection, std::unique_ptr<studica::AHRS>> m_navxs;
 };

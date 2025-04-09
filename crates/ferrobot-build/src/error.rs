@@ -1,5 +1,4 @@
-use std::io;
-use std::{backtrace::Backtrace, panic::Location};
+use std::{backtrace::Backtrace, io, panic::Location};
 
 use thiserror::Error;
 
@@ -15,6 +14,14 @@ pub enum TaskError {
 
     #[error("Command {command:?} completed unsuccessfully")]
     Command { command: Vec<String> },
+
+    #[error("At {location}: CBindgen Error: {source}")]
+    CBindgen {
+        #[from]
+        source: cbindgen::Error,
+        location: &'static Location<'static>,
+        backtrace: Backtrace,
+    },
 }
 
 pub type TaskResult<T = ()> = Result<T, TaskError>;

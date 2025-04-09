@@ -1,11 +1,16 @@
 #![feature(error_generic_member_access)]
 
+extern crate cbindgen;
+extern crate clap;
+extern crate lazy_static;
+extern crate thiserror;
+
 mod args;
 mod error;
 mod paths;
 mod util;
 
-use std::{env, fs, process::Command};
+use std::{env, fs};
 
 use args::{Arguments, Operation};
 use clap::Parser;
@@ -27,20 +32,10 @@ fn run(args: Arguments) -> TaskResult {
             // run cxxbridge
             env::set_current_dir(&*paths::WORKSPACE)?;
 
-            util::exec(
-                Command::new("cxxbridge")
-                    .arg("crates/robot-ffi/src/ffi.rs")
-                    .arg("--header")
-                    .arg("-o")
-                    .arg("cpp/src/main/include/ffi.h"),
-            )?;
-
-            util::exec(
-                Command::new("cxxbridge")
-                    .arg("crates/robot-ffi/src/ffi.rs")
-                    .arg("-o")
-                    .arg("cpp/src/main/cpp/ffi.cpp"),
-            )?;
+            cbindgen::Builder::new()
+                .with_crate("crates/robot-lib/")
+                .generate()?
+                .write_to_file("cpp/src/main/include/ffi.h");
 
             // run cargo build
             util::cargo(&["build", "--target", ATHENA_TARGET], mode)?;

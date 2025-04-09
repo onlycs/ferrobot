@@ -2,7 +2,7 @@
 target = "arm-unknown-linux-gnueabi"
 
 [alias]
-xtask = "run --package robot-build --release --target x86_64-unknown-linux-gnu --"
+xtask = "run --package ferrobot-build --release --target x86_64-unknown-linux-gnu --"
 deploy = "xtask deploy"
 simulate = "xtask simulate"
 

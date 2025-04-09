@@ -3,8 +3,8 @@
 // the WPILib BSD license file in the root directory of this project.
 
 #include "Robot.h"
-#include "ffi.h"
 #include "studica/AHRS.h"
+#include "rev/config/AbsoluteEncoderConfig.h"
 #include "iostream"
 
 Robot::Robot()
@@ -22,11 +22,7 @@ Robot::Robot()
  */
 void Robot::RobotPeriodic()
 {
-	rust::Vec<DeviceCommand> commands = collect();
-	for (auto &command : commands)
-	{
-		std::cout << "Got a command";
-	}
+	start_thread();
 }
 
 /**

@@ -1,11 +1,12 @@
 [package]
-name = "robot"
+name = "ferrobot"
 version = "0.1.0"
 edition = "2024"
 
 [dependencies]
 async-std = "1.13.1"
 cxx = { version = "1.0.156", features = ["c++20"] }
+typed-builder = "0.21.0"
 
 [lib]
 crate-type = ["staticlib"]

@@ -102,6 +102,7 @@
 		"variant": "cpp",
 		"format": "cpp",
 		"stdfloat": "cpp",
-		"text_encoding": "cpp"
+		"text_encoding": "cpp",
+		"*.ipp": "cpp"
 	}
 }
