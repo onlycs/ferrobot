@@ -29,7 +29,7 @@ fn run(args: Arguments) -> TaskResult {
 
             util::exec(
                 Command::new("cxxbridge")
-                    .arg("src/ffi.rs")
+                    .arg("crates/robot-ffi/src/ffi.rs")
                     .arg("--header")
                     .arg("-o")
                     .arg("cpp/src/main/include/ffi.h"),
@@ -37,7 +37,7 @@ fn run(args: Arguments) -> TaskResult {
 
             util::exec(
                 Command::new("cxxbridge")
-                    .arg("src/ffi.rs")
+                    .arg("crates/robot-ffi/src/ffi.rs")
                     .arg("-o")
                     .arg("cpp/src/main/cpp/ffi.cpp"),
             )?;

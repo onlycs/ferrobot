@@ -5,6 +5,7 @@
 #include "Robot.h"
 #include "ffi.h"
 #include "studica/AHRS.h"
+#include "iostream"
 
 Robot::Robot()
 {
@@ -19,7 +20,14 @@ Robot::Robot()
  * <p> This runs after the mode specific periodic functions, but before
  * LiveWindow and SmartDashboard integrated updating.
  */
-void Robot::RobotPeriodic() {}
+void Robot::RobotPeriodic()
+{
+	rust::Vec<DeviceCommand> commands = collect();
+	for (auto &command : commands)
+	{
+		std::cout << "Got a command";
+	}
+}
 
 /**
  * This function is called once each time the robot enters Disabled mode. You
@@ -63,6 +71,6 @@ void Robot::SimulationPeriodic() {}
 #ifndef RUNNING_FRC_TESTS
 int main()
 {
-  return frc::StartRobot<Robot>();
+	return frc::StartRobot<Robot>();
 }
 #endif

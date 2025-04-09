@@ -1,4 +1,4 @@
-use crate::{start_thread, supply};
+use crate::{collect, start_thread, supply};
 
 #[allow(clippy::module_inception)]
 #[cxx::bridge]
@@ -27,8 +27,8 @@ mod ffi {
     enum NavXConnection {
         SPI = 0,
         UART = 1,
-        Usb1 = 2,
-        Usb2 = 3,
+        USB1 = 2,
+        USB2 = 3,
         I2C = 4,
     }
 
@@ -54,10 +54,16 @@ mod ffi {
         id: u8,
     }
 
-    #[derive(Clone, Copy, Debug)]
+    #[derive(Debug)]
     struct DeviceData {
         device: Device,
-        data: *mut u8,
+        data: *const u8,
+    }
+
+    #[derive(Debug)]
+    struct DeviceCommand {
+        device: Device,
+        command: *const u8,
     }
 
     #[derive(Debug, Default)]
@@ -69,6 +75,7 @@ mod ffi {
     extern "Rust" {
         fn start_thread();
         fn supply(ctx: Context);
+        fn collect() -> Vec<DeviceCommand>;
     }
 }
 
@@ -77,5 +84,9 @@ impl Default for RobotMode {
         RobotMode::Disabled
     }
 }
+
+// pointers are read-only and box-pinned
+unsafe impl Send for DeviceCommand {}
+unsafe impl Sync for DeviceCommand {}
 
 pub use ffi::*;

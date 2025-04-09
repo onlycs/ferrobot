@@ -8,23 +8,28 @@
 
 #include <frc/TimedRobot.h>
 #include <frc2/command/CommandPtr.h>
+#include <rev/SparkMax.h>
+#include <ffi.h>
+#include <studica/AHRS.h>
 
+using namespace rev;
 
-class Robot : public frc::TimedRobot {
- public:
-  Robot();
-  void RobotPeriodic() override;
-  void DisabledInit() override;
-  void DisabledPeriodic() override;
-  void AutonomousInit() override;
-  void AutonomousPeriodic() override;
-  void TeleopInit() override;
-  void TeleopPeriodic() override;
-  void TestPeriodic() override;
-  void SimulationInit() override;
-  void SimulationPeriodic() override;
+class Robot : public frc::TimedRobot
+{
+public:
+	Robot();
+	void RobotPeriodic() override;
+	void DisabledInit() override;
+	void DisabledPeriodic() override;
+	void AutonomousInit() override;
+	void AutonomousPeriodic() override;
+	void TeleopInit() override;
+	void TeleopPeriodic() override;
+	void TestPeriodic() override;
+	void SimulationInit() override;
+	void SimulationPeriodic() override;
 
- private:
-  // Have it empty by default so that if testing teleop it
-  // doesn't have undefined behavior and potentially crash.
+private:
+	std::map<uint8_t, std::unique_ptr<spark::SparkMax>> m_motors;
+	std::map<NavXConnection, std::unique_ptr<studica::AHRS>> m_navxs;
 };
