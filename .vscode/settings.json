@@ -1,3 +1,24 @@
 {
-	"java.configuration.updateBuildConfiguration": "interactive"
+	"files.associations": {
+		"type_traits": "cpp",
+		"optional": "cpp",
+		"*.ipp": "cpp"
+	},
+	"java.configuration.updateBuildConfiguration": "disabled",
+	"java.import.gradle.enabled": false,
+	"files.exclude": {
+		"**/.git": true,
+		"**/.svn": true,
+		"**/.hg": true,
+		"**/CVS": true,
+		"**/.DS_Store": true,
+		"cpp/bin/": true,
+		"**/.classpath": true,
+		"**/.project": true,
+		"**/.settings": true,
+		"**/.factorypath": true,
+		"**/*~": true
+	},
+	"C_Cpp.default.configurationProvider": "vscode-wpilib",
+	"C_Cpp.default.cppStandard": "c++20"
 }

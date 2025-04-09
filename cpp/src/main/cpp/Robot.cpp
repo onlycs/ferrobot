@@ -3,8 +3,13 @@
 // the WPILib BSD license file in the root directory of this project.
 
 #include "Robot.h"
+#include "ffi.h"
+#include "studica/AHRS.h"
 
-Robot::Robot() {}
+Robot::Robot()
+{
+	start_thread();
+}
 
 /**
  * This function is called every 20 ms, no matter the mode. Use
@@ -56,7 +61,8 @@ void Robot::SimulationInit() {}
 void Robot::SimulationPeriodic() {}
 
 #ifndef RUNNING_FRC_TESTS
-int main() {
+int main()
+{
   return frc::StartRobot<Robot>();
 }
 #endif

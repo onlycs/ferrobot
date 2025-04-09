@@ -21,6 +21,13 @@ pub enum Operation {
         #[arg(value_enum, default_value_t = BuildMode::Debug)]
         mode: BuildMode,
     },
+
+    /// Deploy the Robot Code
+    Deploy {
+        /// Debug or Release
+        #[arg(value_enum, default_value_t = BuildMode::Debug)]
+        mode: BuildMode,
+    },
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, clap::ValueEnum)]

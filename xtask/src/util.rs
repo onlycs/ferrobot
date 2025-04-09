@@ -3,7 +3,7 @@ use crate::paths;
 use crate::{args::BuildMode, error::TaskError};
 use std::{env, process};
 
-pub fn exec(mut command: process::Command) -> TaskResult {
+pub fn exec(command: &mut process::Command) -> TaskResult {
     let status = command.status()?;
 
     if !status.success() {
@@ -28,7 +28,7 @@ pub fn cargo(args: &[&str], with_mode: BuildMode) -> TaskResult {
         cmd.arg("--release");
     }
 
-    exec(cmd)
+    exec(&mut cmd)
 }
 
 pub fn gradle(args: &[&str]) -> TaskResult {
@@ -37,5 +37,5 @@ pub fn gradle(args: &[&str]) -> TaskResult {
     let mut cmd = process::Command::new("./gradlew");
     cmd.args(args);
 
-    exec(cmd)
+    exec(&mut cmd)
 }

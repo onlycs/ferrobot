@@ -2,7 +2,9 @@
 target = "arm-unknown-linux-gnueabi"
 
 [alias]
-xtask = "run --package xtask --target x86_64-unknown-linux-gnu --"
+xtask = "run --package xtask --release --target x86_64-unknown-linux-gnu --"
+deploy = "xtask deploy"
+simulate = "xtask simulate"
 
 [target.arm-unknown-linux-gnueabi]
 linker = "arm-frc2025-linux-gnueabi-gcc"
