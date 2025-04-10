@@ -1,33 +1,39 @@
-use std::convert::Infallible;
 use std::time::Duration;
+
 use typed_builder::TypedBuilder;
 
 #[repr(C)]
 #[derive(Clone, Copy, Debug, PartialEq, TypedBuilder)]
 pub struct AbsoluteEncoderConfig {
-    /// Set the phase of the encoder so that it is in phase with the motor itself.
+    /// Set the phase of the encoder so that it is in phase with the motor
+    /// itself.
     #[builder(default = false)]
     inverted: bool,
 
     /// Set the conversion factor for the position of the absolute encoder.
-    /// The native unit is rotations and values will be multiplied by this conversion factor
+    /// The native unit is rotations and values will be multiplied by this
+    /// conversion factor
     #[builder(default = 1.0)]
     position_factor: f64,
 
     /// Set the conversion factor for the velocity of the absolute encoder.
-    /// The native unit is rotations per minute and values will be multiplied by this conversion factor
+    /// The native unit is rotations per minute and values will be multiplied by
+    /// this conversion factor
     #[builder(default = 1.0)]
     velocity_factor: f64,
 
-    /// Set the zero offset of the absolute encoder, i.e. the position that is reported as zero.
+    /// Set the zero offset of the absolute encoder, i.e. the position that is
+    /// reported as zero.
     ///
-    /// The zero offset is specified as the reported position of the encoder in the desired zero position as if the zero offset was set to 0,
-    /// the position conversion factor was set to 1, and inverted was set to false.
+    /// The zero offset is specified as the reported position of the encoder in
+    /// the desired zero position as if the zero offset was set to 0,
+    /// the position conversion factor was set to 1, and inverted was set to
+    /// false.
     #[builder(default = 0.0)]
     zero_offset: f64,
 
-    /// Set the average sampling depth of the absolute encoder (1, 2, 4, 8, 16, 32, 64, or 128).
-    /// The default value is 128.
+    /// Set the average sampling depth of the absolute encoder (1, 2, 4, 8, 16,
+    /// 32, 64, or 128). The default value is 128.
     #[builder(default = 128, setter(transform = |depth: u8| {
         assert!(depth.is_power_of_two() && depth <= 128);
         depth
@@ -42,7 +48,8 @@ pub struct AbsoluteEncoderConfig {
     #[builder(default = -1.0, setter(transform = |width: Duration| width.as_micros() as f64))]
     end_pulse_us: f64,
 
-    /// Enable/disable zero-centered reporting of position (-0.5 to 0.5 range instead of 0 to 1)
+    /// Enable/disable zero-centered reporting of position (-0.5 to 0.5 range
+    /// instead of 0 to 1)
     #[builder(default = false)]
     zero_centered: bool,
 }
@@ -146,23 +153,26 @@ pub struct RelativeEncoderConfig {
     #[builder(default = 0)]
     counts_per_revolution: u32,
 
-    /// Set the phase of the encoder so that it is in phase with the motor itself.
-    /// This only applies for brushed motors
+    /// Set the phase of the encoder so that it is in phase with the motor
+    /// itself. This only applies for brushed motors
     #[builder(default = false)]
     inverted: bool,
 
     /// Set the conversion factor for the position of the relative encoder.
-    /// The native unit is rotations and values will be multiplied by this conversion factor
+    /// The native unit is rotations and values will be multiplied by this
+    /// conversion factor
     #[builder(default = 1.0)]
     position_factor: f64,
 
     /// Set the conversion factor for the velocity of the relative encoder.
-    /// The native unit is rotations per minute and values will be multiplied by this conversion factor
+    /// The native unit is rotations per minute and values will be multiplied by
+    /// this conversion factor
     #[builder(default = 1.0)]
     velocity_factor: f64,
 
-    /// Set the sampling depth of the velocity calculation process of the encoder.
-    /// This value sets the number of samples in the average for velocity readings.
+    /// Set the sampling depth of the velocity calculation process of the
+    /// encoder. This value sets the number of samples in the average for
+    /// velocity readings.
     ///
     /// This value must be in the range [1, 64]. The default value is 64.
     #[builder(default = 0, setter(transform = |depth: u8| {
@@ -171,24 +181,26 @@ pub struct RelativeEncoderConfig {
     }))]
     quadrature_average_depth: u8,
 
-    /// Set the position measurement period used to calculate the velocity of the encoder.
-    /// This value must be >= 1ms and <= 100ms, and will be interpreted in a whole number of ms.
-    /// The default value is 100ms.
+    /// Set the position measurement period used to calculate the velocity of
+    /// the encoder. This value must be >= 1ms and <= 100ms, and will be
+    /// interpreted in a whole number of ms. The default value is 100ms.
     #[builder(default = 100, setter(transform = |d: Duration| d.as_millis() as u8))]
     quadrature_measurement_period: u8,
 
-    /// Set the sampling depth of the velocity calculation process of the encoder.
-    /// This value sets the number of samples in the average for velocity readings.
-    /// This value must be either 1, 2, 4, or 8 (default).
+    /// Set the sampling depth of the velocity calculation process of the
+    /// encoder. This value sets the number of samples in the average for
+    /// velocity readings. This value must be either 1, 2, 4, or 8
+    /// (default).
     #[builder(default = 8, setter(transform = |depth: u8| {
         assert!(depth.is_power_of_two() && depth <= 8);
         depth
     }))]
     uvw_average_depth: u8,
 
-    /// Set the position measurement period used to calculate the velocity of the encoder.
-    /// This value is in units of milliseconds and must be in a range [8, 64]. The default value is 32ms.
-    /// The basic formula to calculate velocity is change in position / change in time.
+    /// Set the position measurement period used to calculate the velocity of
+    /// the encoder. This value is in units of milliseconds and must be in a
+    /// range [8, 64]. The default value is 32ms. The basic formula to
+    /// calculate velocity is change in position / change in time.
     /// This parameter sets the change in time for measurement.
     #[builder(default = 32, setter(transform = |d: Duration| {
         assert!(d.as_millis() >= 8 && d.as_millis() <= 64, "Period must be between 8ms and 64ms");

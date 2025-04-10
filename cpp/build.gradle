@@ -67,9 +67,9 @@ model {
 
 			binaries.withType(NativeExecutableBinarySpec) { bin ->
 				if (bin.toString().contains("linuxathena")) {
-					linker.args("-Llibstatic", "-l:librobot_athena.a");
+					linker.args("-Llibstatic", "-l:libferrobot_athena.a");
 				} else {
-					linker.args("-Llibstatic", "-l:librobot_x64.a");
+					linker.args("-Llibstatic", "-l:libferrobot_x64.a");
 				}
 			}
 

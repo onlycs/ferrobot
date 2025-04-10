@@ -39,6 +39,9 @@ impl Drop for DeviceCommands {
     }
 }
 
+unsafe impl Send for DeviceCommands {}
+unsafe impl Sync for DeviceCommands {}
+
 #[repr(C)]
 #[derive(Debug)]
 pub(crate) struct DeviceDatas {
@@ -67,6 +70,9 @@ impl Drop for DeviceDatas {
         }
     }
 }
+
+unsafe impl Send for DeviceDatas {}
+unsafe impl Sync for DeviceDatas {}
 
 // #[allow(clippy::module_inception)]
 // #[cxx::bridge]

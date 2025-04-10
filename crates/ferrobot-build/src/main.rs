@@ -33,7 +33,7 @@ fn run(args: Arguments) -> TaskResult {
             env::set_current_dir(&*paths::WORKSPACE)?;
 
             cbindgen::Builder::new()
-                .with_crate("crates/robot-lib/")
+                .with_crate("crates/ferrobot/")
                 .generate()?
                 .write_to_file("cpp/src/main/include/ffi.h");
 
@@ -42,14 +42,14 @@ fn run(args: Arguments) -> TaskResult {
             util::cargo(&["build", "--target", HOST_TARGET], mode)?;
 
             let athena_dir = paths::TARGET.join(ATHENA_TARGET).join(mode.to_string());
-            let librobot_athena = athena_dir.join("librobot.a");
-            let librobot_dest_athena = paths::LIBSTATIC.join("librobot_athena.a");
-            fs::copy(&librobot_athena, &librobot_dest_athena)?;
+            let libferrobot_athena = athena_dir.join("libferrobot.a");
+            let libferrobot_dest_athena = paths::LIBSTATIC.join("libferrobot_athena.a");
+            fs::copy(&libferrobot_athena, &libferrobot_dest_athena)?;
 
             let x64_dir = paths::TARGET.join(HOST_TARGET).join(mode.to_string());
-            let librobot_x64 = x64_dir.join("librobot.a");
-            let librobot_dest_x64 = paths::LIBSTATIC.join("librobot_x64.a");
-            fs::copy(&librobot_x64, &librobot_dest_x64)?;
+            let libferrobot_x64 = x64_dir.join("libferrobot.a");
+            let libferrobot_dest_x64 = paths::LIBSTATIC.join("libferrobot_x64.a");
+            fs::copy(&libferrobot_x64, &libferrobot_dest_x64)?;
 
             // cd into ./cpp
             env::set_current_dir(&*paths::CPP)?;

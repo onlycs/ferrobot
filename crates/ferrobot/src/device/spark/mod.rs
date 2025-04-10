@@ -1,9 +1,11 @@
 mod config;
 pub(crate) mod ffi;
 
-use crate::context::Context;
-pub use config::*;
 use std::ffi::c_void;
+
+pub use config::*;
+
+use crate::context::Context;
 
 #[repr(C)]
 #[derive(Clone, Copy, Debug, PartialEq)]
@@ -21,7 +23,7 @@ pub struct SparkMax {
 }
 
 impl SparkMax {
-    pub fn new(ctx: &Context, can_id: u8, motor_type: MotorType) -> Self {
+    pub async fn new(can_id: u8, motor_type: MotorType) -> Self {
         let command = super::ffi::DeviceCommand {
             device: super::ffi::Device {
                 kind: super::ffi::DeviceType::SparkMax,
@@ -33,19 +35,20 @@ impl SparkMax {
             })) as *const c_void,
         };
 
-        ctx.command(command);
+        Context::instance().read().await.command(command);
 
         Self { can_id }
     }
 
-    pub fn data(&self, ctx: &Context) -> Option<SparkMaxData> {
-        unsafe { ctx.data(self).copied() }
+    pub async fn data(&self) -> Option<SparkMaxData> {
+        unsafe { Context::instance().read().await.data(self).copied() }
     }
 }
 
 impl super::Device for SparkMax {
-    const KIND: super::ffi::DeviceType = super::ffi::DeviceType::SparkMax;
     type Data = SparkMaxData;
+
+    const KIND: super::ffi::DeviceType = super::ffi::DeviceType::SparkMax;
 
     fn id(&self) -> u8 {
         self.can_id

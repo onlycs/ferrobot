@@ -2,7 +2,7 @@ use std::ffi::c_void;
 
 #[repr(C)]
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
-pub enum CommandType {
+pub(crate) enum CommandType {
     SetPosition,
     SetVelocity,
     SetOutput,
