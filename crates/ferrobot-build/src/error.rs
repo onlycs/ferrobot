@@ -22,6 +22,22 @@ pub enum TaskError {
         location: &'static Location<'static>,
         backtrace: Backtrace,
     },
+
+    #[error("At {location}: Syn Error: {source}")]
+    Syn {
+        #[from]
+        source: syn::Error,
+        location: &'static Location<'static>,
+        backtrace: Backtrace,
+    },
+
+    #[error("At {location}: Could not convert UTF-8 bytes: {source}")]
+    Utf8 {
+        #[from]
+        source: std::string::FromUtf8Error,
+        location: &'static Location<'static>,
+        backtrace: Backtrace,
+    },
 }
 
 pub type TaskResult<T = ()> = Result<T, TaskError>;

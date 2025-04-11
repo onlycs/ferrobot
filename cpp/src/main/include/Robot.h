@@ -11,6 +11,7 @@
 #include <rev/SparkMax.h>
 #include <ffi.h>
 #include <studica/AHRS.h>
+#include <SparkMaxContainer.h>
 
 using namespace rev;
 
@@ -30,5 +31,5 @@ public:
 	void SimulationPeriodic() override;
 
 private:
-	std::map<uint8_t, std::unique_ptr<spark::SparkMax>> m_motors;
+	SparkMaxContainer m_sparkMaxContainer = SparkMaxContainer();
 };

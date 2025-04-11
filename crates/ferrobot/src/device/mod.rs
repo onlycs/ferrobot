@@ -6,4 +6,11 @@ pub(crate) trait Device {
     type Data;
 
     fn id(&self) -> u8;
+
+    fn as_ffi(&self) -> ffi::Device {
+        ffi::Device {
+            kind: Self::KIND,
+            id: self.id(),
+        }
+    }
 }

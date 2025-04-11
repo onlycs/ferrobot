@@ -1,5 +1,13 @@
 #![allow(clippy::arc_with_non_send_sync)]
 
+extern crate async_std;
+extern crate cxx;
+extern crate typed_builder;
+
+pub mod context;
+pub mod device;
+mod ffi;
+
 use std::{
     collections::VecDeque,
     sync::{Arc, Mutex},
@@ -9,15 +17,6 @@ use std::{
 use async_std::task;
 use context::Context;
 use ffi::DeviceCommands;
-
-extern crate async_std;
-extern crate cxx;
-extern crate typed_builder;
-
-pub mod context;
-pub mod device;
-mod ffi;
-mod prelude;
 
 // late-init globals
 static mut QUEUE: Option<Arc<Mutex<VecDeque<device::ffi::DeviceCommand>>>> = None;

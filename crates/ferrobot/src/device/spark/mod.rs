@@ -1,11 +1,16 @@
 mod config;
 pub(crate) mod ffi;
 
-use std::ffi::c_void;
-
 pub use config::*;
+use thiserror::Error;
 
 use crate::context::Context;
+
+#[derive(Error, Debug)]
+pub enum SparkMaxError {
+    #[error("Motor with ID {0} already exists")]
+    AlreadyExists(u8),
+}
 
 #[repr(C)]
 #[derive(Clone, Copy, Debug, PartialEq)]
@@ -23,21 +28,32 @@ pub struct SparkMax {
 }
 
 impl SparkMax {
-    pub async fn new(can_id: u8, motor_type: MotorType) -> Self {
-        let command = super::ffi::DeviceCommand {
-            device: super::ffi::Device {
-                kind: super::ffi::DeviceType::SparkMax,
-                id: can_id,
-            },
-            command: Box::into_raw(Box::new(ffi::SparkMaxCommand {
-                kind: ffi::CommandType::Create,
-                data: Box::into_raw(Box::new(motor_type)) as *const c_void,
-            })) as *const c_void,
+    pub async fn new(
+        can_id: u8,
+        motor_type: MotorType,
+        config: SparkMaxConfig,
+    ) -> Result<Self, SparkMaxError> {
+        let ctx = Context::instance().read().await;
+        let ffi_device = super::ffi::Device::spark_max(can_id);
+
+        if ctx.device_exists(&ffi_device).await {
+            return Err(SparkMaxError::AlreadyExists(can_id));
+        }
+
+        let create = super::ffi::DeviceCommand {
+            device: ffi_device,
+            command: ffi::SparkMaxCommand::create(motor_type).into_ptr(),
         };
 
-        Context::instance().read().await.command(command);
+        let configure = super::ffi::DeviceCommand {
+            device: ffi_device,
+            command: ffi::SparkMaxCommand::configure(config).into_ptr(),
+        };
 
-        Self { can_id }
+        ctx.command(create).await;
+        ctx.command(configure).await;
+
+        Ok(Self { can_id })
     }
 
     pub async fn data(&self) -> Option<SparkMaxData> {

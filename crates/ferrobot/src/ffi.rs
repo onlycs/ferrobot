@@ -24,7 +24,7 @@ impl DeviceCommands {
     }
 
     #[unsafe(no_mangle)]
-    pub(crate) unsafe extern "C" fn dealloc_commands(self) {
+    pub(crate) unsafe extern "C" fn device_commands_free(self) {
         unsafe {
             Vec::<u8>::from_raw_parts(self.data as *mut u8, self.len, self.cap);
         }
@@ -56,7 +56,7 @@ impl DeviceDatas {
     }
 
     #[unsafe(no_mangle)]
-    pub(crate) unsafe extern "C" fn dealloc_datas(self) {
+    pub(crate) unsafe extern "C" fn device_datas_free(self) {
         unsafe {
             Vec::<u8>::from_raw_parts(self.data as *mut u8, self.len, self.cap);
         }

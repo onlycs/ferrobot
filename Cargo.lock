@@ -408,6 +408,7 @@ version = "0.1.0"
 dependencies = [
  "async-std",
  "cxx",
+ "thiserror",
  "typed-builder",
 ]
 
@@ -418,6 +419,7 @@ dependencies = [
  "cbindgen",
  "clap",
  "lazy_static",
+ "syn",
  "thiserror",
 ]
 

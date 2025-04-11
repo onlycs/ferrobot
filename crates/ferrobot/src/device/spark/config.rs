@@ -54,8 +54,8 @@ pub struct AbsoluteEncoderConfig {
     zero_centered: bool,
 }
 
+#[repr(u8)]
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
-#[repr(C)]
 pub enum FeedbackSensor {
     None = 0,
     RelativeEncoder = 1,
@@ -217,11 +217,11 @@ pub struct SparkMaxConfig {
     relative_encoder: RelativeEncoderConfig,
 }
 
-#[repr(C)]
+#[repr(u8)]
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
 pub enum MotorType {
-    Brushless,
-    Brushed,
+    Brushed = 0,
+    Brushless = 1,
 }
 
 impl Default for AbsoluteEncoderConfig {

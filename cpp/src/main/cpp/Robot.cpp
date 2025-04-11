@@ -9,7 +9,7 @@
 
 Robot::Robot()
 {
-	start_thread();
+	ffi::start_thread();
 }
 
 /**
@@ -22,7 +22,22 @@ Robot::Robot()
  */
 void Robot::RobotPeriodic()
 {
-	start_thread();
+	ffi::DeviceCommands commands = ffi::collect();
+	for (size_t i = 0; i < commands.len; i++)
+	{
+		const ffi::DeviceCommand &command = commands.data[i];
+		switch (command.device.kind)
+		{
+		case ffi::DeviceType::SparkMax:
+			m_sparkMaxContainer.HandleCommand(command.device.id, (const ffi::SparkMaxCommand *)command.command);
+			break;
+		default:
+			std::cerr << "Unknown device type" << std::endl;
+			break;
+		}
+	}
+
+	ffi::device_commands_free(commands);
 }
 
 /**

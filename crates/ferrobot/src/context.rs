@@ -1,6 +1,9 @@
-use std::collections::VecDeque;
+use std::{
+    collections::{HashSet, VecDeque},
+    sync::{Arc, Mutex},
+};
 
-use async_std::sync::{RwLockReadGuard, RwLockWriteGuard};
+use async_std::sync::{RwLock, RwLockReadGuard};
 
 use crate::{
     device::{
@@ -8,7 +11,6 @@ use crate::{
         ffi::{DeviceCommand, DeviceData},
     },
     ffi::DeviceDatas,
-    prelude::*,
 };
 
 #[repr(C)]
@@ -19,12 +21,15 @@ pub(crate) struct ContextFFI {
 
 #[derive(Debug)]
 pub(crate) struct ContextInner {
-    devices: Vec<DeviceData>,
+    data: Vec<DeviceData>,
+    devices: RwLock<HashSet<device::ffi::Device>>,
     queue: Arc<Mutex<VecDeque<DeviceCommand>>>,
 }
 
 impl ContextInner {
-    pub(crate) fn command(&self, command: device::ffi::DeviceCommand) {
+    pub(crate) async fn command(&self, command: device::ffi::DeviceCommand) {
+        self.devices.write().await.insert(command.device);
+
         let mut queue = match self.queue.lock() {
             Ok(queue) => queue,
             Err(poisoned) => poisoned.into_inner(),
@@ -33,20 +38,20 @@ impl ContextInner {
         queue.push_back(command);
     }
 
-    pub(crate) unsafe fn data<D: Device>(&self, device: &D) -> Option<&D::Data> {
-        let device = device::ffi::Device {
-            kind: D::KIND,
-            id: device.id(),
-        };
+    pub(crate) async fn device_exists(&self, device: &device::ffi::Device) -> bool {
+        self.devices.read().await.contains(device)
+    }
 
-        let data = self.devices.iter().find(|d| d.device == device)?;
+    pub(crate) unsafe fn data<D: Device>(&self, device: &D) -> Option<&D::Data> {
+        let device = device.as_ffi();
+        let data = self.data.iter().find(|d| d.device == device)?;
         let data = unsafe { &*(data.data as *const D::Data) };
 
         Some(data)
     }
 }
 
-pub struct Context(RwLock<ContextInner>);
+pub struct Context(Arc<RwLock<ContextInner>>);
 
 static mut CONTEXT: Option<Context> = None;
 
@@ -57,26 +62,27 @@ impl Context {
             if CONTEXT.is_none() {
                 let queue = crate::QUEUE.as_ref().unwrap();
 
-                CONTEXT = Some(Context(RwLock::new(ContextInner {
-                    devices: vec![],
+                CONTEXT = Some(Self::new(ContextInner {
+                    data: vec![],
+                    devices: RwLock::new(HashSet::new()),
                     queue: Arc::clone(queue),
-                })));
+                }));
             }
 
             CONTEXT.as_ref().unwrap()
         }
     }
 
+    fn new(inner: ContextInner) -> Self {
+        Self(Arc::new(RwLock::new(inner)))
+    }
+
     pub(crate) async fn read(&self) -> RwLockReadGuard<'_, ContextInner> {
         self.0.read().await
     }
 
-    pub(crate) async fn write(&self) -> RwLockWriteGuard<'_, ContextInner> {
-        self.0.write().await
-    }
-
     pub(crate) async fn replace(&self, ffi: DeviceDatas) {
-        let mut context = self.write().await;
-        context.devices = ffi.to_vec();
+        let mut context = self.0.write().await;
+        context.data = ffi.to_vec();
     }
 }
