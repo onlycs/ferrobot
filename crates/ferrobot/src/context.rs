@@ -6,13 +6,7 @@ use std::{
 use async_std::sync::{RwLock, RwLockReadGuard};
 use interoptopus::{extra_type, ffi_type, inventory::InventoryBuilder};
 
-use crate::{
-    device::{
-        self, Device,
-        ffi::{DeviceCommand, DeviceData},
-    },
-    ffi::DeviceDatas,
-};
+use crate::{device::prelude::*, ffi::DeviceDatas};
 
 #[ffi_type(namespace = "ffi")]
 #[derive(Debug)]
@@ -22,13 +16,13 @@ pub(crate) struct ContextFFI {
 
 #[derive(Debug)]
 pub(crate) struct ContextInner {
-    data: Vec<DeviceData>,
-    devices: RwLock<HashSet<device::ffi::Device>>,
-    queue: Arc<Mutex<VecDeque<DeviceCommand>>>,
+    data: Vec<device_ffi::Data>,
+    devices: RwLock<HashSet<device_ffi::Device>>,
+    queue: Arc<Mutex<VecDeque<device_ffi::Command>>>,
 }
 
 impl ContextInner {
-    pub(crate) async fn command(&self, command: device::ffi::DeviceCommand) {
+    pub(crate) async fn command(&self, command: device_ffi::Command) {
         self.devices.write().await.insert(command.device);
 
         let mut queue = match self.queue.lock() {
@@ -39,12 +33,12 @@ impl ContextInner {
         queue.push_back(command);
     }
 
-    pub(crate) async fn device_exists(&self, device: &device::ffi::Device) -> bool {
-        self.devices.read().await.contains(device)
+    pub(crate) async fn device_exists<D: Device>(&self, device: &D) -> bool {
+        self.devices.read().await.contains(&device.into())
     }
 
     pub(crate) unsafe fn data<D: Device>(&self, device: &D) -> Option<&D::Data> {
-        let device = device.as_ffi();
+        let device = device.into();
         let data = self.data.iter().find(|d| d.device == device)?;
         let data = unsafe { &*(data.data as *const D::Data) };
 

@@ -1,20 +1,16 @@
 use interoptopus::inventory::InventoryBuilder;
 
-pub(crate) mod ffi;
+mod ffi;
+pub mod prelude;
 pub mod spark;
 
 pub(crate) trait Device {
-    const KIND: ffi::DeviceType;
+    const TYPE: ffi::DeviceType;
+
     type Data;
+    type Command;
 
     fn id(&self) -> u8;
-
-    fn as_ffi(&self) -> ffi::Device {
-        ffi::Device {
-            kind: Self::KIND,
-            id: self.id(),
-        }
-    }
 }
 
 pub(super) fn __ffi_inventory(mut builder: InventoryBuilder) -> InventoryBuilder {

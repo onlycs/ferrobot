@@ -1,19 +1,19 @@
 use std::mem;
 
-use interoptopus::{extra_type, ffi_type, ffi_function, function, inventory::InventoryBuilder};
+use interoptopus::{extra_type, ffi_function, ffi_type, function, inventory::InventoryBuilder};
 
-use crate::device::ffi::{DeviceCommand, DeviceData};
+use crate::device::prelude::*;
 
 #[ffi_type(namespace = "ffi")]
 #[derive(Debug)]
 pub(crate) struct DeviceCommands {
-    data: *const DeviceCommand,
+    data: *const device_ffi::Command,
     len: u32,
     cap: u32,
 }
 
 impl DeviceCommands {
-    pub(crate) fn new(from: Vec<DeviceCommand>) -> Self {
+    pub(crate) fn new(from: Vec<device_ffi::Command>) -> Self {
         let ffi = DeviceCommands {
             data: from.as_ptr(),
             cap: from.capacity() as u32,
@@ -40,16 +40,16 @@ unsafe impl Sync for DeviceCommands {}
 #[ffi_type(namespace = "ffi")]
 #[derive(Debug)]
 pub(crate) struct DeviceDatas {
-    data: *const DeviceData,
+    data: *const device_ffi::Data,
     len: u32,
     cap: u32,
 }
 
 impl DeviceDatas {
-    pub(crate) fn to_vec(&self) -> Vec<DeviceData> {
+    pub(crate) fn to_vec(&self) -> Vec<device_ffi::Data> {
         unsafe {
             Vec::from_raw_parts(
-                self.data as *mut DeviceData,
+                self.data as *mut device_ffi::Data,
                 self.len as usize,
                 self.cap as usize,
             )
@@ -75,11 +75,14 @@ impl Drop for DeviceDatas {
 unsafe impl Send for DeviceDatas {}
 unsafe impl Sync for DeviceDatas {}
 
-
 #[ffi_function(namespace = "ffi")]
 pub(crate) unsafe fn device_commands_free(commands: DeviceCommands) {
     unsafe {
-        Vec::<u8>::from_raw_parts(commands.data as *mut u8, commands.len as usize, commands.cap as usize);
+        Vec::<u8>::from_raw_parts(
+            commands.data as *mut u8,
+            commands.len as usize,
+            commands.cap as usize,
+        );
     }
 }
 
@@ -89,8 +92,6 @@ pub(super) fn __ffi_inventory(builder: InventoryBuilder) -> InventoryBuilder {
         .register(extra_type!(DeviceDatas))
         .register(function!(device_commands_free))
 }
-
-
 
 // #[allow(clippy::module_inception)]
 // #[cxx::bridge]

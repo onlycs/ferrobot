@@ -56,10 +56,6 @@ impl Command {
             data: Box::into_raw(Box::new(motor_type)) as *const c_void,
         }
     }
-
-    pub(crate) fn into_ptr(self) -> *const c_void {
-        Box::into_raw(Box::new(self)) as *const c_void
-    }
 }
 
 impl Drop for Command {

@@ -7,9 +7,9 @@ edition = "2024"
 interoptopus = { git = "https://github.com/onlycs/interoptopus", branch = "cpp-namespaces" }
 interoptopus_backend_c = { git = "https://github.com/onlycs/interoptopus", branch = "cpp-namespaces", optional = true }
 async-std = "1.13.1"
-cxx = { version = "1.0.156", features = ["c++20"] }
 thiserror = { git = "https://github.com/onlycs/thiserror", version = "2.0.11" }
 typed-builder = "0.21.0"
+log = "0.4.27"
 
 [lib]
 crate-type = ["staticlib", "cdylib", "rlib"]

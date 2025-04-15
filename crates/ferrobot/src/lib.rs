@@ -1,7 +1,11 @@
 #![allow(clippy::arc_with_non_send_sync)]
 
 extern crate async_std;
-extern crate cxx;
+extern crate interoptopus;
+#[macro_use] extern crate log;
+#[cfg(feature = "build")]
+extern crate interoptopus_backend_c;
+extern crate thiserror;
 extern crate typed_builder;
 
 pub mod context;
@@ -16,6 +20,7 @@ use std::{
 
 use async_std::task;
 use context::Context;
+use device::prelude::*;
 use ffi::DeviceCommands;
 use interoptopus::{
     backend::NamespaceMappings,
@@ -25,7 +30,7 @@ use interoptopus::{
 use interoptopus_backend_c::{Interop, InteropBuilder, NameCase};
 
 // late-init globals
-static mut QUEUE: Option<Arc<Mutex<VecDeque<device::ffi::DeviceCommand>>>> = None;
+static mut QUEUE: Option<Arc<Mutex<VecDeque<device_ffi::Command>>>> = None;
 
 async fn main() {
     println!("Hello World!");
