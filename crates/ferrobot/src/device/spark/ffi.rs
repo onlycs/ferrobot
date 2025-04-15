@@ -1,8 +1,10 @@
 use std::{ffi::c_void, mem};
 
-use super::{MotorType, SparkMaxConfig};
+use interoptopus::{extra_type, ffi_type, inventory::InventoryBuilder};
 
-#[repr(u8)]
+use super::{Config, MotorType};
+
+#[ffi_type(namespace = "ffi::spark")]
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
 pub(crate) enum CommandType {
     SetPosition,
@@ -12,14 +14,14 @@ pub(crate) enum CommandType {
     Create,
 }
 
-#[repr(C)]
+#[ffi_type(namespace = "ffi::spark")]
 #[derive(Clone, Debug, PartialEq, Eq, Hash)]
-pub(crate) struct SparkMaxCommand {
+pub(crate) struct Command {
     kind: CommandType,
     data: *const c_void,
 }
 
-impl SparkMaxCommand {
+impl Command {
     pub(crate) fn set_position(position: f64) -> Self {
         Self {
             kind: CommandType::SetPosition,
@@ -41,7 +43,7 @@ impl SparkMaxCommand {
         }
     }
 
-    pub(crate) fn configure(config: SparkMaxConfig) -> Self {
+    pub(crate) fn configure(config: Config) -> Self {
         Self {
             kind: CommandType::Configure,
             data: Box::into_raw(Box::new(config)) as *const c_void,
@@ -60,16 +62,20 @@ impl SparkMaxCommand {
     }
 }
 
-impl Drop for SparkMaxCommand {
+impl Drop for Command {
     fn drop(&mut self) {
         match self.kind {
             CommandType::SetVelocity | CommandType::SetPosition | CommandType::SetOutput => unsafe {
                 mem::drop(Box::from_raw(self.data as *mut f64))
             },
-            CommandType::Configure => unsafe {
-                mem::drop(Box::from_raw(self.data as *mut SparkMaxConfig))
-            },
+            CommandType::Configure => unsafe { mem::drop(Box::from_raw(self.data as *mut Config)) },
             CommandType::Create => unsafe { mem::drop(Box::from_raw(self.data as *mut MotorType)) },
         }
     }
+}
+
+pub(super) fn __ffi_inventory(builder: InventoryBuilder) -> InventoryBuilder {
+    builder
+        .register(extra_type!(CommandType))
+        .register(extra_type!(Command))
 }

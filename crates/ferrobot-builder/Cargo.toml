@@ -1,0 +1,14 @@
+[package]
+name = "ferrobot-builder"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+cbindgen = "0.28.0"
+clap = { version = "4.5.34", features = ["derive"] }
+lazy_static = "1.5.0"
+syn = "2.0.100"
+thiserror = { git = "https://github.com/onlycs/thiserror", version = "2.0.11" }
+ferrobot = { path = "../ferrobot", features = ["build"] }
+interoptopus = { git = "https://github.com/onlycs/interoptopus", branch = "cpp-namespaces" }
+interoptopus_backend_c = { git = "https://github.com/onlycs/interoptopus", branch = "cpp-namespaces" }

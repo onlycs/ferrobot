@@ -9,7 +9,6 @@
 #include <frc/TimedRobot.h>
 #include <frc2/command/CommandPtr.h>
 #include <rev/SparkMax.h>
-#include <ffi.h>
 #include <studica/AHRS.h>
 #include <SparkMaxContainer.h>
 

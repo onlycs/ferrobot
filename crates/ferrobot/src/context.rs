@@ -4,6 +4,7 @@ use std::{
 };
 
 use async_std::sync::{RwLock, RwLockReadGuard};
+use interoptopus::{extra_type, ffi_type, inventory::InventoryBuilder};
 
 use crate::{
     device::{
@@ -13,7 +14,7 @@ use crate::{
     ffi::DeviceDatas,
 };
 
-#[repr(C)]
+#[ffi_type(namespace = "ffi")]
 #[derive(Debug)]
 pub(crate) struct ContextFFI {
     pub(crate) devices: DeviceDatas,
@@ -85,4 +86,8 @@ impl Context {
         let mut context = self.0.write().await;
         context.data = ffi.to_vec();
     }
+}
+
+pub(super) fn __ffi_inventory(builder: InventoryBuilder) -> InventoryBuilder {
+    builder.register(extra_type!(ContextFFI))
 }

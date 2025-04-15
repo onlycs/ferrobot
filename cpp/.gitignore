@@ -187,5 +187,5 @@ compile_commands.json
 .factorypath
 
 src/main/cpp/ffi.cpp
-src/main/include/ffi.h
+src/main/include/ffi/**/*
 libstatic

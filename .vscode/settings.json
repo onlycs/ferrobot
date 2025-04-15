@@ -2,7 +2,11 @@
 	"files.associations": {
 		"type_traits": "cpp",
 		"optional": "cpp",
-		"*.ipp": "cpp"
+		"*.ipp": "cpp",
+		"core": "cpp",
+		"algorithm": "cpp",
+		"cmath": "cpp",
+		"complex": "cpp"
 	},
 	"java.configuration.updateBuildConfiguration": "disabled",
 	"java.import.gradle.enabled": false,

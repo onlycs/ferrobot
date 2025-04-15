@@ -6,6 +6,9 @@
 #include "studica/AHRS.h"
 #include "rev/config/AbsoluteEncoderConfig.h"
 #include "iostream"
+#include "ffi/ferrobot.h"
+
+using namespace ffi::device;
 
 Robot::Robot()
 {
@@ -23,16 +26,17 @@ Robot::Robot()
 void Robot::RobotPeriodic()
 {
 	ffi::DeviceCommands commands = ffi::collect();
+
 	for (size_t i = 0; i < commands.len; i++)
 	{
-		const ffi::DeviceCommand &command = commands.data[i];
+		const DeviceCommand &command = commands.data[i];
 		switch (command.device.kind)
 		{
-		case ffi::DeviceType::SparkMax:
-			m_sparkMaxContainer.HandleCommand(command.device.id, (const ffi::SparkMaxCommand *)command.command);
+		case DeviceType::DeviceTypeSparkMax:
+			m_sparkMaxContainer.HandleCommand(command.device.id, (const spark_ffi::Command *)command.command);
 			break;
 		default:
-			std::cerr << "Unknown device type" << std::endl;
+			std::cerr << "[ERROR] Unknown device type: " << (int)command.device.kind << std::endl;
 			break;
 		}
 	}

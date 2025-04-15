@@ -1,8 +1,9 @@
 use std::time::Duration;
 
+use interoptopus::{extra_type, ffi_type, inventory::InventoryBuilder};
 use typed_builder::TypedBuilder;
 
-#[repr(C)]
+#[ffi_type(namespace = "ffi::spark::config")]
 #[derive(Clone, Copy, Debug, PartialEq, TypedBuilder)]
 pub struct AbsoluteEncoderConfig {
     /// Set the phase of the encoder so that it is in phase with the motor
@@ -54,7 +55,7 @@ pub struct AbsoluteEncoderConfig {
     zero_centered: bool,
 }
 
-#[repr(u8)]
+#[ffi_type(namespace = "ffi::spark::config")]
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
 pub enum FeedbackSensor {
     None = 0,
@@ -64,7 +65,7 @@ pub enum FeedbackSensor {
     AbsoluteEncoder = 4,
 }
 
-#[repr(C)]
+#[ffi_type(namespace = "ffi::spark::config")]
 #[derive(Clone, Copy, Debug, PartialEq, TypedBuilder)]
 #[builder(mutators(
     /// Enable position wrapping for the closed loop controller.
@@ -145,7 +146,7 @@ pub struct ClosedLoopConfig {
     feedback_sensor: FeedbackSensor,
 }
 
-#[repr(C)]
+#[ffi_type(namespace = "ffi::spark::config")]
 #[derive(Clone, Copy, Debug, PartialEq, TypedBuilder)]
 pub struct RelativeEncoderConfig {
     /// Set the counts per revolution of the encoder.
@@ -209,15 +210,15 @@ pub struct RelativeEncoderConfig {
     uvw_measurement_period: u8,
 }
 
-#[repr(C)]
+#[ffi_type(namespace = "ffi::spark::config")]
 #[derive(Clone, Copy, Debug, PartialEq)]
-pub struct SparkMaxConfig {
+pub struct Config {
     absolute_encoder: AbsoluteEncoderConfig,
     closed_loop: ClosedLoopConfig,
     relative_encoder: RelativeEncoderConfig,
 }
 
-#[repr(u8)]
+#[ffi_type(namespace = "ffi::spark::config")]
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
 pub enum MotorType {
     Brushed = 0,
@@ -240,4 +241,14 @@ impl Default for RelativeEncoderConfig {
     fn default() -> Self {
         Self::builder().build()
     }
+}
+
+pub(super) fn __ffi_inventory(builder: InventoryBuilder) -> InventoryBuilder {
+    builder
+        .register(extra_type!(FeedbackSensor))
+        .register(extra_type!(MotorType))
+        .register(extra_type!(AbsoluteEncoderConfig))
+        .register(extra_type!(ClosedLoopConfig))
+        .register(extra_type!(RelativeEncoderConfig))
+        .register(extra_type!(Config))
 }

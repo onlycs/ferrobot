@@ -38,6 +38,14 @@ pub enum TaskError {
         location: &'static Location<'static>,
         backtrace: Backtrace,
     },
+
+    #[error("At {location}: Interoptopus error: {source}")]
+    Interoptopus {
+        #[from]
+        source: interoptopus::Error,
+        location: &'static Location<'static>,
+        backtrace: Backtrace,
+    },
 }
 
 pub type TaskResult<T = ()> = Result<T, TaskError>;

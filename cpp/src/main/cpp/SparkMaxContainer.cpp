@@ -1,25 +1,26 @@
 #include "SparkMaxContainer.h"
 #include <iostream>
 
-void SparkMaxContainer::HandleCommand(uint8_t can_id, const ffi::SparkMaxCommand *command)
+void SparkMaxContainer::HandleCommand(uint8_t can_id, const spark_ffi::Command *command)
 {
 	switch (command->kind)
 	{
-	case ffi::CommandType::Create:
-		const ffi::MotorType *motor_type = (const ffi::MotorType *)command->data;
-		HandleCreate(can_id, Convert(*motor_type));
+	case spark_ffi::CommandType::CommandTypeCreate: {
+		HandleCreate(can_id, Convert(*(const spark_ffi::config::MotorType *)command->data));
 		break;
-	default:
+	}
+	default: {
 		std::cerr << "[ERROR] Unknown command type: " << (int)command->kind << std::endl;
 		break;
 	}
+	}
 }
 
-void SparkMaxContainer::HandleCreate(uint8_t can_id, spark::SparkMax::MotorType motor_type)
+void SparkMaxContainer::HandleCreate(uint8_t can_id, SparkMax::MotorType motor_type)
 {
 	if (m_motors.find(can_id) == m_motors.end())
 	{
-		m_motors[can_id] = std::make_unique<spark::SparkMax>(can_id, motor_type);
+		m_motors[can_id] = std::make_unique<SparkMax>(can_id, motor_type);
 	}
 	else
 	{
@@ -28,17 +29,17 @@ void SparkMaxContainer::HandleCreate(uint8_t can_id, spark::SparkMax::MotorType 
 	}
 }
 
-spark::SparkBase::MotorType SparkMaxContainer::Convert(ffi::MotorType motor_type)
+SparkMax::MotorType SparkMaxContainer::Convert(spark_ffi::config::MotorType motor_type)
 {
 	switch (motor_type)
 	{
-	case ffi::MotorType::Brushed:
-		return spark::SparkBase::MotorType::kBrushed;
-	case ffi::MotorType::Brushless:
-		return spark::SparkBase::MotorType::kBrushless;
+	case spark_ffi::config::MotorType::MotorTypeBrushed:
+		return SparkMax::MotorType::kBrushed;
+	case spark_ffi::config::MotorType::MotorTypeBrushless:
+		return SparkMax::MotorType::kBrushless;
 	default:
 		std::cerr << "[ERROR] Unknown motor type: " << (int)motor_type << std::endl;
 		std::cerr << "Defaulting to brushless" << std::endl;
-		return spark::SparkBase::MotorType::kBrushless;
+		return SparkMax::MotorType::kBrushless;
 	}
 }
