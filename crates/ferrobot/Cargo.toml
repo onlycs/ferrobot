@@ -4,8 +4,8 @@ version = "0.1.0"
 edition = "2024"
 
 [dependencies]
-interoptopus = { path = "../../../interoptopus/crates/core" }
-interoptopus_backend_c = { path = "../../../interoptopus/crates/backend_c", optional = true }
+interoptopus = { git = "https://github.com/onlycs/interoptopus", branch = "cpp-namespaces" }
+interoptopus_backend_c = { git = "https://github.com/onlycs/interoptopus", branch = "cpp-namespaces", optional = true }
 async-std = "1.13.1"
 thiserror = { git = "https://github.com/onlycs/thiserror", version = "2.0.11" }
 typed-builder = "0.21.0"

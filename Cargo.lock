@@ -537,6 +537,7 @@ dependencies = [
 [[package]]
 name = "interoptopus"
 version = "0.15.0-alpha.4"
+source = "git+https://github.com/onlycs/interoptopus?branch=cpp-namespaces#b67a9f2b45e4c97129da86a98aa2c25e94f0efff"
 dependencies = [
  "interoptopus_proc",
 ]
@@ -544,6 +545,7 @@ dependencies = [
 [[package]]
 name = "interoptopus_backend_c"
 version = "0.15.0-alpha.4"
+source = "git+https://github.com/onlycs/interoptopus?branch=cpp-namespaces#b67a9f2b45e4c97129da86a98aa2c25e94f0efff"
 dependencies = [
  "derive_builder",
  "heck 0.5.0",
@@ -553,6 +555,7 @@ dependencies = [
 [[package]]
 name = "interoptopus_proc"
 version = "0.15.0-alpha.4"
+source = "git+https://github.com/onlycs/interoptopus?branch=cpp-namespaces#b67a9f2b45e4c97129da86a98aa2c25e94f0efff"
 dependencies = [
  "darling",
  "prettyplease",

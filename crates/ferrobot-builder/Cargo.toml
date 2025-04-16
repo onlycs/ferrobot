@@ -10,5 +10,5 @@ lazy_static = "1.5.0"
 syn = "2.0.100"
 thiserror = { git = "https://github.com/onlycs/thiserror", version = "2.0.11" }
 ferrobot = { path = "../ferrobot", features = ["build"] }
-interoptopus = { path = "../../../interoptopus/crates/core" }
-interoptopus_backend_c = { path = "../../../interoptopus/crates/backend_c" }
+interoptopus = { git = "https://github.com/onlycs/interoptopus", branch = "cpp-namespaces" }
+interoptopus_backend_c = { git = "https://github.com/onlycs/interoptopus", branch = "cpp-namespaces" }
