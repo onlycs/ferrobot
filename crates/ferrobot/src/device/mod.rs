@@ -7,8 +7,8 @@ pub mod spark;
 pub(crate) trait Device {
     const TYPE: ffi::DeviceType;
 
-    type Data;
-    type Command;
+    type DataFFI;
+    type CommandFFI;
 
     fn id(&self) -> u8;
 }

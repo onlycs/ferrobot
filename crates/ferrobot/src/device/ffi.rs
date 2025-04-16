@@ -40,7 +40,7 @@ impl Drop for Data {
         unsafe {
             match self.device.kind {
                 DeviceType::SparkMax => drop(Box::from_raw(
-                    self.data as *mut <SparkMax as super::Device>::Data,
+                    self.data as *mut <SparkMax as super::Device>::DataFFI,
                 )),
                 DeviceType::NavX => unimplemented!(), // TODO: NavX
                 DeviceType::XboxController => unimplemented!(), // TODO: XboxController
@@ -61,7 +61,7 @@ pub(crate) struct Command {
 }
 
 impl Command {
-    pub fn new<D: super::Device>(device: &D, command: D::Command) -> Self {
+    pub fn new<D: super::Device>(device: &D, command: D::CommandFFI) -> Self {
         Self {
             device: device.into(),
             command: Box::into_raw(Box::new(command)) as *const c_void,
@@ -74,7 +74,7 @@ impl Drop for Command {
         unsafe {
             match self.device.kind {
                 DeviceType::SparkMax => drop(Box::from_raw(
-                    self.command as *mut <SparkMax as super::Device>::Command,
+                    self.command as *mut <SparkMax as super::Device>::CommandFFI,
                 )),
                 DeviceType::NavX => unimplemented!(), // TODO: NavX
                 DeviceType::XboxController => unimplemented!(), // TODO: XboxController

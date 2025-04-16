@@ -3,9 +3,10 @@ mod ffi;
 pub mod prelude;
 
 pub use config::*;
-use interoptopus::{extra_type, ffi_type, inventory::InventoryBuilder};
+use interoptopus::inventory::InventoryBuilder;
 use prelude::*;
 use thiserror::Error;
+use uom::si::{angle::revolution, angular_velocity::revolution_per_minute as rpm};
 
 use crate::context::Context;
 
@@ -15,14 +16,25 @@ pub enum Error {
     AlreadyExists(u8),
 }
 
-#[ffi_type(namespace = "ffi::spark")]
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub struct Data {
-    connected: bool,
-    position: f64,
-    velocity: f64,
-    output: f64,
-    current: f64,
+    pub connected: bool,
+    pub output: f64,
+    pub position: Angle,
+    pub velocity: AngularVelocity,
+    pub current: ElectricCurrent,
+}
+
+impl From<spark_ffi::Data> for Data {
+    fn from(value: spark_ffi::Data) -> Self {
+        Self {
+            connected: value.connected,
+            output: value.output,
+            position: Angle::new::<revolution>(value.position),
+            velocity: AngularVelocity::new::<rpm>(value.velocity),
+            current: ElectricCurrent::new::<amp>(value.current),
+        }
+    }
 }
 
 #[derive(Debug)]
@@ -54,20 +66,23 @@ impl SparkMax {
     }
 
     pub async fn data(&self) -> Option<Data> {
-        unsafe { Context::instance().read().await.data(self).copied() }
+        let ctx = Context::instance().read().await;
+        unsafe { ctx.data(self).copied().map(Data::from) }
     }
 
-    pub async fn set_position(&self, position: f64) {
-        debug!("Setting spark {} position to {}", self.can_id, position);
+    pub async fn set_position(&self, position: Angle) {
+        debug!("Setting spark {} position to {:?}", self.can_id, position);
 
+        let position = position.get::<revolution>();
         let ctx = Context::instance().read().await;
         let command = device_ffi::Command::new(self, spark_ffi::Command::set_position(position));
         ctx.command(command).await;
     }
 
-    pub async fn set_velocity(&self, velocity: f64) {
-        debug!("Setting spark {} velocity to {}", self.can_id, velocity);
+    pub async fn set_velocity(&self, velocity: AngularVelocity) {
+        debug!("Setting spark {} velocity to {:?}", self.can_id, velocity);
 
+        let velocity = velocity.get::<rpm>();
         let ctx = Context::instance().read().await;
         let command = device_ffi::Command::new(self, spark_ffi::Command::set_velocity(velocity));
         ctx.command(command).await;
@@ -87,8 +102,8 @@ impl SparkMax {
 }
 
 impl super::Device for SparkMax {
-    type Command = spark_ffi::Command;
-    type Data = Data;
+    type CommandFFI = spark_ffi::Command;
+    type DataFFI = spark_ffi::Data;
 
     const TYPE: super::ffi::DeviceType = super::ffi::DeviceType::SparkMax;
 
@@ -100,6 +115,5 @@ impl super::Device for SparkMax {
 pub(super) fn __ffi_inventory(mut builder: InventoryBuilder) -> InventoryBuilder {
     builder = ffi::__ffi_inventory(builder);
     builder = config::__ffi_inventory(builder);
-
-    builder.register(extra_type!(Data))
+    builder
 }

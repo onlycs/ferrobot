@@ -4,7 +4,7 @@ use interoptopus::{extra_type, ffi_type, inventory::InventoryBuilder};
 
 use super::{Config, MotorType};
 
-#[ffi_type(namespace = "ffi::spark")]
+#[ffi_type(namespace = "ffi::device::spark")]
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
 pub(crate) enum CommandType {
     SetPosition,
@@ -14,7 +14,7 @@ pub(crate) enum CommandType {
     Create,
 }
 
-#[ffi_type(namespace = "ffi::spark")]
+#[ffi_type(namespace = "ffi::device::spark")]
 #[derive(Clone, Debug, PartialEq, Eq, Hash)]
 pub(crate) struct Command {
     kind: CommandType,
@@ -70,8 +70,19 @@ impl Drop for Command {
     }
 }
 
+#[ffi_type(namespace = "ffi::device::spark")]
+#[derive(Clone, Copy, Debug, PartialEq)]
+pub(crate) struct Data {
+    pub(crate) connected: bool,
+    pub(crate) output: f64,
+    pub(crate) position: f64,
+    pub(crate) velocity: f64,
+    pub(crate) current: f64,
+}
+
 pub(super) fn __ffi_inventory(builder: InventoryBuilder) -> InventoryBuilder {
     builder
         .register(extra_type!(CommandType))
         .register(extra_type!(Command))
+        .register(extra_type!(Data))
 }

@@ -8,7 +8,7 @@
 #include "iostream"
 #include "ffi/ferrobot.h"
 
-using namespace ffi::device;
+namespace device = ffi::device;
 
 Robot::Robot()
 {
@@ -29,10 +29,10 @@ void Robot::RobotPeriodic()
 
 	for (size_t i = 0; i < commands.len; i++)
 	{
-		const DeviceCommand &command = commands.data[i];
+		const device::Command &command = commands.data[i];
 		switch (command.device.kind)
 		{
-		case DeviceType::DeviceTypeSparkMax:
+		case device::DeviceType::DeviceTypeSparkMax:
 			m_sparkMaxContainer.HandleCommand(command.device.id, (const spark_ffi::Command *)command.command);
 			break;
 		default:

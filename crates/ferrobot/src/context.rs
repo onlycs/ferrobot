@@ -37,10 +37,10 @@ impl ContextInner {
         self.devices.read().await.contains(&device.into())
     }
 
-    pub(crate) unsafe fn data<D: Device>(&self, device: &D) -> Option<&D::Data> {
+    pub(crate) unsafe fn data<D: Device>(&self, device: &D) -> Option<&D::DataFFI> {
         let device = device.into();
         let data = self.data.iter().find(|d| d.device == device)?;
-        let data = unsafe { &*(data.data as *const D::Data) };
+        let data = unsafe { &*(data.data as *const D::DataFFI) };
 
         Some(data)
     }

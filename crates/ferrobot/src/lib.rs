@@ -2,15 +2,17 @@
 
 extern crate async_std;
 extern crate interoptopus;
-#[macro_use] extern crate log;
 #[cfg(feature = "build")]
 extern crate interoptopus_backend_c;
+extern crate log;
 extern crate thiserror;
 extern crate typed_builder;
+extern crate uom;
 
 pub mod context;
 pub mod device;
 mod ffi;
+pub mod prelude;
 
 use std::{
     collections::VecDeque,

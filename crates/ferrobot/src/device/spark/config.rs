@@ -3,7 +3,7 @@ use std::time::Duration;
 use interoptopus::{extra_type, ffi_type, inventory::InventoryBuilder};
 use typed_builder::TypedBuilder;
 
-#[ffi_type(namespace = "ffi::spark::config")]
+#[ffi_type(namespace = "ffi::device::spark::config")]
 #[derive(Clone, Copy, Debug, PartialEq, TypedBuilder)]
 pub struct AbsoluteEncoderConfig {
     /// Set the phase of the encoder so that it is in phase with the motor
@@ -14,12 +14,16 @@ pub struct AbsoluteEncoderConfig {
     /// Set the conversion factor for the position of the absolute encoder.
     /// The native unit is rotations and values will be multiplied by this
     /// conversion factor
+    ///
+    /// This is NOT RECOMMENDED, you will break uom outputs if you use this
     #[builder(default = 1.0)]
     position_factor: f64,
 
     /// Set the conversion factor for the velocity of the absolute encoder.
     /// The native unit is rotations per minute and values will be multiplied by
     /// this conversion factor
+    ///
+    /// This is NOT RECOMMENDED, you will break uom outputs if you use this
     #[builder(default = 1.0)]
     velocity_factor: f64,
 
@@ -55,7 +59,7 @@ pub struct AbsoluteEncoderConfig {
     zero_centered: bool,
 }
 
-#[ffi_type(namespace = "ffi::spark::config")]
+#[ffi_type(namespace = "ffi::device::spark::config")]
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
 pub enum FeedbackSensor {
     None = 0,
@@ -65,7 +69,7 @@ pub enum FeedbackSensor {
     AbsoluteEncoder = 4,
 }
 
-#[ffi_type(namespace = "ffi::spark::config")]
+#[ffi_type(namespace = "ffi::device::spark::config")]
 #[derive(Clone, Copy, Debug, PartialEq, TypedBuilder)]
 #[builder(mutators(
     /// Enable position wrapping for the closed loop controller.
@@ -92,19 +96,19 @@ pub enum FeedbackSensor {
 ))]
 pub struct ClosedLoopConfig {
     /// The proportional gain of the closed loop controller.
-    #[builder(via_mutators, default = -1.0)]
+    #[builder(via_mutators, default = 0.0)]
     proportional: f64,
 
     /// The integral gain of the closed loop controller.
-    #[builder(via_mutators, default = -1.0)]
+    #[builder(via_mutators, default = 0.0)]
     integral: f64,
 
     /// The derivative gain of the closed loop controller.
-    #[builder(via_mutators, default = -1.0)]
+    #[builder(via_mutators, default = 0.0)]
     derivative: f64,
 
     /// The feedforward gain of the closed loop controller.
-    #[builder(via_mutators, default = -1.0)]
+    #[builder(via_mutators, default = 0.0)]
     feedforward: f64,
 
     /// The maximum integral accumulator of the closed loop controller.
@@ -146,7 +150,7 @@ pub struct ClosedLoopConfig {
     feedback_sensor: FeedbackSensor,
 }
 
-#[ffi_type(namespace = "ffi::spark::config")]
+#[ffi_type(namespace = "ffi::device::spark::config")]
 #[derive(Clone, Copy, Debug, PartialEq, TypedBuilder)]
 pub struct RelativeEncoderConfig {
     /// Set the counts per revolution of the encoder.
@@ -162,12 +166,16 @@ pub struct RelativeEncoderConfig {
     /// Set the conversion factor for the position of the relative encoder.
     /// The native unit is rotations and values will be multiplied by this
     /// conversion factor
+    ///
+    /// This is NOT RECOMMENDED, you will break uom outputs if you use this
     #[builder(default = 1.0)]
     position_factor: f64,
 
     /// Set the conversion factor for the velocity of the relative encoder.
     /// The native unit is rotations per minute and values will be multiplied by
     /// this conversion factor
+    ///
+    /// This is NOT RECOMMENDED, you will break uom outputs if you use this
     #[builder(default = 1.0)]
     velocity_factor: f64,
 
@@ -185,14 +193,14 @@ pub struct RelativeEncoderConfig {
     /// Set the position measurement period used to calculate the velocity of
     /// the encoder. This value must be >= 1ms and <= 100ms, and will be
     /// interpreted in a whole number of ms. The default value is 100ms.
-    #[builder(default = 100, setter(transform = |d: Duration| d.as_millis() as u8))]
+    #[builder(default = 0, setter(transform = |d: Duration| d.as_millis() as u8))]
     quadrature_measurement_period: u8,
 
     /// Set the sampling depth of the velocity calculation process of the
     /// encoder. This value sets the number of samples in the average for
     /// velocity readings. This value must be either 1, 2, 4, or 8
     /// (default).
-    #[builder(default = 8, setter(transform = |depth: u8| {
+    #[builder(default = 0, setter(transform = |depth: u8| {
         assert!(depth.is_power_of_two() && depth <= 8);
         depth
     }))]
@@ -210,7 +218,7 @@ pub struct RelativeEncoderConfig {
     uvw_measurement_period: u8,
 }
 
-#[ffi_type(namespace = "ffi::spark::config")]
+#[ffi_type(namespace = "ffi::device::spark::config")]
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub struct Config {
     absolute_encoder: AbsoluteEncoderConfig,
@@ -218,7 +226,7 @@ pub struct Config {
     relative_encoder: RelativeEncoderConfig,
 }
 
-#[ffi_type(namespace = "ffi::spark::config")]
+#[ffi_type(namespace = "ffi::device::spark::config")]
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
 pub enum MotorType {
     Brushed = 0,
