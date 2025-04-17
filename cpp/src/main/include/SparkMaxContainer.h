@@ -16,12 +16,12 @@ public:
 	void HandleCommand(uint8_t can_id, const spark_ffi::Command *command);
 
 private:
-	void HandleCreate(uint8_t can_id, SparkBase::MotorType motor_type);
-	void HandleConfigure(uint8_t can_id, std::unique_ptr<SparkMaxConfig> config);
+	void HandleCreate(uint8_t can_id, const spark_ffi::config::SparkMaxConfig *config);
 
 	static SparkBase::MotorType Convert(const spark_ffi::config::MotorType *motor_type);
-	static std::unique_ptr<SparkMaxConfig> Convert(const spark_ffi::config::Config *config);
+	static std::unique_ptr<SparkMaxConfig> Convert(const spark_ffi::config::SparkMaxConfig *config);
 	static ClosedLoopConfig::FeedbackSensor Convert(spark_ffi::config::FeedbackSensor sensor);
+	static SparkBaseConfig::IdleMode Convert(spark_ffi::config::IdleMode mode);
 
 	std::map<uint8_t, std::unique_ptr<SparkMax>> m_motors = {};
 };

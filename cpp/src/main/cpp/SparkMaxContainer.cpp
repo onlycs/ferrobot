@@ -7,12 +7,7 @@ void SparkMaxContainer::HandleCommand(uint8_t can_id, const spark_ffi::Command *
 	{
 	case spark_ffi::CommandType::CommandTypeCreate:
 	{
-		HandleCreate(can_id, Convert((const spark_ffi::config::MotorType *)command->data));
-		break;
-	}
-	case spark_ffi::CommandType::CommandTypeConfigure:
-	{
-		HandleConfigure(can_id, Convert((const spark_ffi::config::Config *)command->data));
+		HandleCreate(can_id, (const spark_ffi::config::SparkMaxConfig *)command->data);
 		break;
 	}
 	default:
@@ -23,30 +18,21 @@ void SparkMaxContainer::HandleCommand(uint8_t can_id, const spark_ffi::Command *
 	}
 }
 
-void SparkMaxContainer::HandleCreate(uint8_t can_id, SparkMax::MotorType motor_type)
+void SparkMaxContainer::HandleCreate(uint8_t can_id, const spark_ffi::config::SparkMaxConfig *config)
 {
-	if (m_motors.find(can_id) == m_motors.end())
+	if (m_motors.contains(can_id))
 	{
-		m_motors[can_id] = std::make_unique<SparkMax>(can_id, motor_type);
+		std::unique_ptr<SparkMaxConfig> converted_config = Convert(config);
+		uint8_t can_id = config->motor.can_id;
+		SparkBase::MotorType motor_type = Convert(&config->motor.motor_type);
+		std::unique_ptr<SparkMax> motor = std::make_unique<SparkMax>(can_id, motor_type);
+		motor->Configure(*converted_config, SparkBase::ResetMode::kResetSafeParameters, SparkBase::PersistMode::kNoPersistParameters);
+		m_motors.emplace(can_id, std::move(motor));
 	}
 	else
 	{
 		std::cerr << "[ERROR] Motor with ID " << (int)can_id << " already exists." << std::endl;
 		std::cerr << "This should have been checked on the Rust side. Please submit an issue." << std::endl;
-	}
-}
-
-void SparkMaxContainer::HandleConfigure(uint8_t can_id, std::unique_ptr<SparkMaxConfig> config)
-{
-	auto it = m_motors.find(can_id);
-	if (it != m_motors.end())
-	{
-		SparkMax *motor = it->second.get();
-		motor->Configure(*config, SparkMax::ResetMode::kResetSafeParameters, SparkMax::PersistMode::kPersistParameters);
-	}
-	else
-	{
-		std::cerr << "[ERROR] Motor with ID " << (int)can_id << " does not exist." << std::endl;
 	}
 }
 
@@ -86,7 +72,22 @@ ClosedLoopConfig::FeedbackSensor SparkMaxContainer::Convert(spark_ffi::config::F
 	}
 }
 
-std::unique_ptr<SparkMaxConfig> SparkMaxContainer::Convert(const spark_ffi::config::Config *config)
+SparkBaseConfig::IdleMode SparkMaxContainer::Convert(spark_ffi::config::IdleMode mode)
+{
+	switch (mode)
+	{
+	case spark_ffi::config::IdleMode::IdleModeCoast:
+		return SparkBaseConfig::IdleMode::kCoast;
+	case spark_ffi::config::IdleMode::IdleModeBrake:
+		return SparkBaseConfig::IdleMode::kBrake;
+	default:
+		std::cerr << "[ERROR] Unknown idle mode: " << (int)mode << std::endl;
+		std::cerr << "Defaulting to brake" << std::endl;
+		return SparkBaseConfig::IdleMode::kBrake;
+	}
+}
+
+std::unique_ptr<SparkMaxConfig> SparkMaxContainer::Convert(const spark_ffi::config::SparkMaxConfig *config)
 {
 	std::unique_ptr<SparkMaxConfig> converted_uniq = std::make_unique<SparkMaxConfig>();
 	SparkMaxConfig *converted = converted_uniq.get();
@@ -165,6 +166,29 @@ std::unique_ptr<SparkMaxConfig> SparkMaxContainer::Convert(const spark_ffi::conf
 	if (config->relative_encoder.uvw_measurement_period != 0)
 	{
 		converted->encoder.UvwMeasurementPeriod(config->relative_encoder.uvw_measurement_period);
+	}
+
+	// motor
+	converted->SetIdleMode(Convert(config->motor.idle_mode));
+
+	// inverted means different things based on follow mode or not
+	if (config->motor.leader_id != 0)
+	{
+		converted->Follow(config->motor.leader_id, config->motor.inverted);
+	}
+	else
+	{
+		converted->Inverted(config->motor.inverted);
+	}
+
+	if (config->motor.current_limit != 0.0)
+	{
+		converted->SmartCurrentLimit(config->motor.current_limit);
+	}
+
+	if (config->motor.nominal_voltage != 0.0)
+	{
+		converted->VoltageCompensation(config->motor.nominal_voltage);
 	}
 
 	return converted_uniq;

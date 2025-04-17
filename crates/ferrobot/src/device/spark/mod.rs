@@ -43,26 +43,21 @@ pub struct SparkMax {
 }
 
 impl SparkMax {
-    pub async fn new(can_id: u8, motor_type: MotorType, config: Config) -> Result<Self, Error> {
+    pub async fn new(config: SparkMaxConfig) -> Result<Self, Error> {
         let ctx = Context::instance().read().await;
+        let can_id = config.motor.can_id;
         let this = Self { can_id };
 
         if ctx.device_exists(&this).await {
             return Err(Error::AlreadyExists(can_id));
         }
 
-        let create = device_ffi::Command::new(&this, spark_ffi::Command::create(motor_type));
-        let configure = device_ffi::Command::new(&this, spark_ffi::Command::configure(config));
+        info!("Creating SparkMax with ID {} ", can_id);
 
-        info!(
-            "Creating SparkMax with ID {} and motor type {:?}",
-            can_id, motor_type
-        );
-
+        let create = device_ffi::Command::new(&this, spark_ffi::Command::create(config));
         ctx.command(create).await;
-        ctx.command(configure).await;
 
-        Ok(Self { can_id })
+        Ok(this)
     }
 
     pub async fn data(&self) -> Option<Data> {
