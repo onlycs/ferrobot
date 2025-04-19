@@ -1,11 +1,10 @@
 use std::{ffi::c_void, mem};
 
-#[cfg(feature = "build")]
-use interoptopus::{extra_type, ffi_type, inventory::InventoryBuilder};
+use interoptopus::ffi_type;
 
 use super::prelude::*;
 
-#[cfg_attr(feature = "build", ffi_type(namespace = "ffi::device::spark"))]
+#[ffi_type(namespace = "ffi::device::spark")]
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
 pub(crate) enum CommandType {
     SetPosition,
@@ -14,7 +13,7 @@ pub(crate) enum CommandType {
     Create,
 }
 
-#[cfg_attr(feature = "build", ffi_type(namespace = "ffi::device::spark"))]
+#[ffi_type(namespace = "ffi::device::spark")]
 #[derive(Clone, Debug, PartialEq, Eq, Hash)]
 pub(crate) struct Command {
     kind: CommandType,
@@ -68,7 +67,7 @@ impl device::Command for Command {
     type Response = Response;
 }
 
-#[cfg_attr(feature = "build", ffi_type(namespace = "ffi::device::spark"))]
+#[ffi_type(namespace = "ffi::device::spark")]
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub(crate) struct Data {
     pub(crate) connected: bool,
@@ -79,7 +78,7 @@ pub(crate) struct Data {
 }
 
 #[allow(dead_code)]
-#[cfg_attr(feature = "build", ffi_type(namespace = "ffi::device::spark"))]
+#[ffi_type(namespace = "ffi::device::spark")]
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub(crate) enum Response {
     Ok,

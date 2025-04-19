@@ -3,4 +3,7 @@ pub(crate) mod device_ffi {
 }
 
 pub(crate) use super::Device;
-pub use crate::{device, prelude::*};
+pub use crate::{
+    device::{self, spark},
+    prelude::*,
+};

@@ -31,13 +31,8 @@ public:
 private:
 };
 
-#ifdef __cplusplus
 extern "C"
 {
-#endif
 	// C function to start the robot
 	void *handle_command(device::Command command);
-
-#ifdef __cplusplus
 }
-#endif

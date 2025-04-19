@@ -2,9 +2,9 @@ mod config;
 mod ffi;
 pub mod prelude;
 
+use std::{backtrace::Backtrace, panic::Location};
+
 pub use config::*;
-#[cfg(feature = "build")]
-use interoptopus::inventory::InventoryBuilder;
 use prelude::*;
 use thiserror::Error;
 use uom::si::{angle::revolution, angular_velocity::revolution_per_minute as rpm};
@@ -17,6 +17,15 @@ pub enum Error {
     AlreadyExists(u8),
     #[error("Invalid configuration for motor (ID {0})")]
     InvalidConfig(u8),
+    #[error("Bad `set_output` command: Expected -1.0 to 1.0, got {0}")]
+    InvalidOutput(f64),
+    #[error("At {location}: Context error: {source:?}")]
+    ContextError {
+        #[from]
+        source: context::Error,
+        location: &'static Location<'static>,
+        backtrace: Backtrace,
+    },
 }
 
 impl ffi::Response {
@@ -62,13 +71,10 @@ impl SparkMax {
     pub async fn new(can_id: u8, config: SparkMaxConfig) -> Result<Self, Error> {
         let ctx = Context::instance().read().await;
         let this = Self { can_id };
-
-        if ctx.device_exists(&this).await {
-            return Err(Error::AlreadyExists(can_id));
-        }
-
         let command = spark_ffi::Command::create(config);
-        ctx.command(&this, command).await.to_result(can_id)?;
+
+        ctx.add_device(&this).await?;
+        ctx.command(&this, command).await?.to_result(can_id)?;
 
         Ok(this)
     }
@@ -85,7 +91,7 @@ impl SparkMax {
         let ctx = Context::instance().read().await;
         let command = spark_ffi::Command::set_position(position);
 
-        ctx.command(self, command).await.to_result(self.can_id)
+        ctx.command(self, command).await?.to_result(self.can_id)
     }
 
     pub async fn set_velocity(&self, velocity: AngularVelocity) -> Result<(), Error> {
@@ -95,12 +101,12 @@ impl SparkMax {
         let ctx = Context::instance().read().await;
         let command = spark_ffi::Command::set_velocity(velocity);
 
-        ctx.command(self, command).await.to_result(self.can_id)
+        ctx.command(self, command).await?.to_result(self.can_id)
     }
 
     pub async fn set_output(&self, output: f64) -> Result<(), Error> {
         if !(-1.0..=1.0).contains(&output) {
-            panic!("`output` must be between -1.0 and 1.0");
+            return Err(Error::InvalidOutput(output));
         }
 
         debug!("Setting spark {} output to {}", self.can_id, output);
@@ -108,21 +114,26 @@ impl SparkMax {
         let ctx = Context::instance().read().await;
         let command = spark_ffi::Command::set_output(output);
 
-        ctx.command(self, command).await.to_result(self.can_id)
+        ctx.command(self, command).await?.to_result(self.can_id)
     }
 }
 
-impl super::Device for SparkMax {
+impl device::DeviceFFI for SparkMax {
     type CommandFFI = spark_ffi::Command;
     type DataFFI = spark_ffi::Data;
 
     const TYPE: device_ffi::Type = device_ffi::Type::SparkMax;
+}
+
+impl device::Device for SparkMax {
+    type Data = Data;
 
     fn id(&self) -> u8 {
         self.can_id
     }
 }
 
+#[cfg(feature = "build")]
 pub(super) fn __ffi_inventory(mut builder: InventoryBuilder) -> InventoryBuilder {
     builder = ffi::__ffi_inventory(builder);
     builder = config::__ffi_inventory(builder);

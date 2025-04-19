@@ -1,19 +1,18 @@
 use std::ffi::c_void;
 
-#[cfg(feature = "build")]
-use interoptopus::{extra_type, ffi_function, ffi_type, function, inventory::InventoryBuilder};
+use interoptopus::{ffi_function, ffi_type};
 
-use super::spark::SparkMax;
+use super::prelude::*;
 
-#[cfg_attr(feature = "build", ffi_type(namespace = "ffi::device"))]
+#[ffi_type(namespace = "ffi::device")]
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
-pub(crate) enum Type {
+pub enum Type {
     SparkMax,
     NavX,
     XboxController,
 }
 
-#[cfg_attr(feature = "build", ffi_type(namespace = "ffi::device"))]
+#[ffi_type(namespace = "ffi::device")]
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
 pub(crate) struct Device {
     kind: Type,
@@ -29,7 +28,7 @@ impl<D: super::Device> From<&D> for Device {
     }
 }
 
-#[cfg_attr(feature = "build", ffi_type(namespace = "ffi::device"))]
+#[ffi_type(namespace = "ffi::device")]
 #[derive(Debug)]
 pub(crate) struct Data {
     pub(crate) device: Device,
@@ -41,7 +40,7 @@ impl Drop for Data {
         unsafe {
             match self.device.kind {
                 Type::SparkMax => drop(Box::from_raw(
-                    self.data as *mut <SparkMax as super::Device>::DataFFI,
+                    self.data as *mut <spark::SparkMax as super::DeviceFFI>::DataFFI,
                 )),
                 Type::NavX => unimplemented!(), // TODO: NavX
                 Type::XboxController => unimplemented!(), // TODO: XboxController
@@ -54,7 +53,7 @@ impl Drop for Data {
 unsafe impl Send for Data {}
 unsafe impl Sync for Data {}
 
-#[cfg_attr(feature = "build", ffi_type(namespace = "ffi::device"))]
+#[ffi_type(namespace = "ffi::device")]
 #[derive(Debug)]
 pub(crate) struct Command {
     pub(crate) device: Device,
@@ -75,7 +74,7 @@ impl Drop for Command {
         unsafe {
             match self.device.kind {
                 Type::SparkMax => drop(Box::from_raw(
-                    self.command as *mut <SparkMax as super::Device>::CommandFFI,
+                    self.command as *mut <spark::SparkMax as super::DeviceFFI>::CommandFFI,
                 )),
                 Type::NavX => unimplemented!(), // TODO: NavX
                 Type::XboxController => unimplemented!(), // TODO: XboxController
@@ -84,7 +83,7 @@ impl Drop for Command {
     }
 }
 
-#[cfg_attr(feature = "build", ffi_function(namespace = "ffi::device"))]
+#[ffi_function(namespace = "ffi::device")]
 fn command_free(command: Command) {
     drop(command);
 }

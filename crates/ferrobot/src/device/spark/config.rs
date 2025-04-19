@@ -1,13 +1,14 @@
 use std::time::Duration;
 
-#[cfg(feature = "build")]
-use interoptopus::{extra_type, ffi_type, inventory::InventoryBuilder};
+use interoptopus::ffi_type;
 use typed_builder::TypedBuilder;
 
-use super::SparkMax;
-use crate::{Device, prelude::*};
+use super::{
+    SparkMax,
+    prelude::{device::Device, *},
+};
 
-#[cfg_attr(feature = "build", ffi_type(namespace = "ffi::device::spark::config"))]
+#[ffi_type(namespace = "ffi::device::spark::config")]
 #[derive(Clone, Copy, Debug, PartialEq, TypedBuilder)]
 pub struct AbsoluteEncoderConfig {
     /// Set the phase of the encoder so that it is in phase with the motor
@@ -63,7 +64,7 @@ pub struct AbsoluteEncoderConfig {
     pub zero_centered: bool,
 }
 
-#[cfg_attr(feature = "build", ffi_type(namespace = "ffi::device::spark::config"))]
+#[ffi_type(namespace = "ffi::device::spark::config")]
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
 pub enum FeedbackSensor {
     None = 0,
@@ -73,7 +74,7 @@ pub enum FeedbackSensor {
     AbsoluteEncoder = 4,
 }
 
-#[cfg_attr(feature = "build", ffi_type(namespace = "ffi::device::spark::config"))]
+#[ffi_type(namespace = "ffi::device::spark::config")]
 #[derive(Clone, Copy, Debug, PartialEq, TypedBuilder)]
 #[builder(mutators(
     /// Enable position wrapping for the closed loop controller.
@@ -154,7 +155,7 @@ pub struct ClosedLoopConfig {
     pub feedback_sensor: FeedbackSensor,
 }
 
-#[cfg_attr(feature = "build", ffi_type(namespace = "ffi::device::spark::config"))]
+#[ffi_type(namespace = "ffi::device::spark::config")]
 #[derive(Clone, Copy, Debug, PartialEq, TypedBuilder)]
 pub struct RelativeEncoderConfig {
     /// Set the counts per revolution of the encoder.
@@ -222,7 +223,7 @@ pub struct RelativeEncoderConfig {
     pub uvw_measurement_period: u8,
 }
 
-#[cfg_attr(feature = "build", ffi_type(namespace = "ffi::device::spark::config"))]
+#[ffi_type(namespace = "ffi::device::spark::config")]
 #[derive(Clone, Copy, Debug, PartialEq, TypedBuilder)]
 #[builder(mutators(
     /// Follow the output of another motor controller
@@ -274,7 +275,7 @@ pub struct MotorConfig {
     pub nominal_voltage: f64,
 }
 
-#[cfg_attr(feature = "build", ffi_type(namespace = "ffi::device::spark::config"))]
+#[ffi_type(namespace = "ffi::device::spark::config")]
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub struct SparkMaxConfig {
     pub absolute_encoder: AbsoluteEncoderConfig,
@@ -283,14 +284,14 @@ pub struct SparkMaxConfig {
     pub motor: MotorConfig,
 }
 
-#[cfg_attr(feature = "build", ffi_type(namespace = "ffi::device::spark::config"))]
+#[ffi_type(namespace = "ffi::device::spark::config")]
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
 pub enum MotorType {
     Brushed = 0,
     Brushless = 1,
 }
 
-#[cfg_attr(feature = "build", ffi_type(namespace = "ffi::device::spark::config"))]
+#[ffi_type(namespace = "ffi::device::spark::config")]
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
 pub enum IdleMode {
     /// The motor will hold its position when not powered

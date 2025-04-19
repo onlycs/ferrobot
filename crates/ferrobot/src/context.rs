@@ -1,7 +1,8 @@
 use std::{collections::HashSet, ffi::c_void, sync::Arc};
 
 use async_std::sync::{RwLock, RwLockReadGuard};
-use interoptopus::{extra_type, ffi_type, inventory::InventoryBuilder};
+use interoptopus::ffi_type;
+use thiserror::Error;
 
 use crate::{
     device::prelude::*,
@@ -14,6 +15,14 @@ pub(crate) struct ContextFFI {
     pub(crate) devices: DeviceDatas,
 }
 
+#[derive(Debug, Error)]
+pub enum Error {
+    #[error("Device ({0:?} {1}) not found in context")]
+    DeviceNotFound(device_ffi::Type, u8),
+    #[error("Device ({0:?} {1}) already registered")]
+    DeviceAlreadyRegistered(device_ffi::Type, u8),
+}
+
 #[derive(Debug)]
 pub(crate) struct ContextInner {
     data: Vec<device_ffi::Data>,
@@ -21,17 +30,30 @@ pub(crate) struct ContextInner {
 }
 
 impl ContextInner {
-    pub(crate) async fn command<D: device::Device>(
+    pub(crate) async fn command<D: Device>(
         &self,
         device: &D,
         command: D::CommandFFI,
-    ) -> CBox<<D::CommandFFI as device::Command>::Response> {
-        self.devices.write().await.insert(device.into());
+    ) -> Result<CBox<<D::CommandFFI as device::Command>::Response>, Error> {
+        if !self.device_exists(device).await {
+            return Err(Error::DeviceNotFound(D::TYPE, device.id()));
+        }
 
         let command = device_ffi::Command::new(device, command);
         let res = unsafe { handle_command(command) };
 
-        unsafe { CBox::new(res) }
+        Ok(unsafe { CBox::new(res) })
+    }
+
+    pub(crate) async fn add_device<D: Device>(&self, device: &D) -> Result<(), Error> {
+        if self.device_exists(device).await {
+            return Err(Error::DeviceAlreadyRegistered(D::TYPE, device.id()));
+        }
+
+        let mut devices = self.devices.write().await;
+        devices.insert(device.into());
+
+        Ok(())
     }
 
     pub(crate) async fn device_exists<D: Device>(&self, device: &D) -> bool {

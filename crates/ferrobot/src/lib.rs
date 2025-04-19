@@ -1,4 +1,5 @@
 #![allow(clippy::arc_with_non_send_sync)]
+#![feature(error_generic_member_access)]
 
 extern crate async_std;
 extern crate interoptopus;
@@ -17,23 +18,21 @@ use std::thread;
 
 use async_std::task;
 use context::Context;
-use device::prelude::*;
 use interoptopus::ffi_function;
 
 async fn main() {
     println!("Hello World!");
 }
 
-// starts the main thread
 #[allow(unused)]
-#[cfg_attr(feature = "build", ffi_function(namespace = "ffi"))]
+#[ffi_function(namespace = "ffi")]
 extern "C" fn start_thread() {
     // spawn the main thread
     thread::spawn(|| task::block_on(main()));
 }
 
 #[allow(static_mut_refs, clippy::await_holding_lock, unused)]
-#[cfg_attr(feature = "build", ffi_function(namespace = "ffi"))]
+#[ffi_function(namespace = "ffi")]
 fn supply(context: context::ContextFFI) {
     task::spawn(Context::instance().replace(context.devices));
 }

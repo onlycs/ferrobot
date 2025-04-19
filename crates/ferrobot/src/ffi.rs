@@ -94,32 +94,3 @@ pub(super) mod build {
         builder.register(extra_type!(DeviceDatas))
     }
 }
-
-// #[allow(clippy::module_inception)]
-// #[cxx::bridge]
-// mod ffi {
-//     #[derive(Clone, Copy, PartialEq, Eq, Debug)]
-//     pub enum RobotMode {
-//         Teleoperated,
-//         Autonomous,
-//         Test,
-//         Disabled,
-//     }
-
-//     #[derive(Clone, Copy, Debug, PartialEq)]
-//     pub struct GyroData {
-//         connected: bool,
-//         heading: f64,
-//         rate: f64,
-//     }
-
-//     #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
-//     #[repr(u8)]
-//     pub enum NavXConnection {
-//         SPI = 0,
-//         UART = 1,
-//         USB1 = 2,
-//         USB2 = 3,
-//         I2C = 4,
-//     }
-// }

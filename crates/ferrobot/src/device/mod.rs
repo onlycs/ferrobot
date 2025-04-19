@@ -2,20 +2,24 @@ mod ffi;
 pub mod prelude;
 pub mod spark;
 
-#[cfg(feature = "build")]
-use interoptopus::inventory::InventoryBuilder;
+use prelude::*;
 
-pub(crate) trait Device {
-    const TYPE: ffi::Type;
+pub(crate) trait DeviceFFI {
+    const TYPE: device_ffi::Type;
 
     type DataFFI;
     type CommandFFI: Command;
-
-    fn id(&self) -> u8;
 }
 
 pub(crate) trait Command {
     type Response;
+}
+
+#[allow(private_bounds)]
+pub trait Device: DeviceFFI {
+    type Data: From<Self::DataFFI>;
+
+    fn id(&self) -> u8;
 }
 
 #[cfg(feature = "build")]

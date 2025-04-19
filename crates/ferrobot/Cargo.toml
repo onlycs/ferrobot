@@ -4,7 +4,7 @@ version = "0.1.0"
 edition = "2024"
 
 [dependencies]
-interoptopus = { git = "https://github.com/onlycs/interoptopus", branch = "cpp-namespaces", optional = true }
+interoptopus = { git = "https://github.com/onlycs/interoptopus", branch = "cpp-namespaces" }
 interoptopus_backend_c = { git = "https://github.com/onlycs/interoptopus", branch = "cpp-namespaces", optional = true }
 # interoptopus = { path = "../../../interoptopus/crates/core", optional = true }
 # interoptopus_backend_c = { path = "../../../interoptopus/crates/backend_c", optional = true }
@@ -25,4 +25,4 @@ crate-type = ["staticlib", "cdylib", "rlib"]
 
 [features]
 default = []
-build = ["dep:interoptopus_backend_c", "dep:interoptopus"]
+build = ["dep:interoptopus_backend_c"]
