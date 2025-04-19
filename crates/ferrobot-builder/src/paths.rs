@@ -9,4 +9,5 @@ lazy_static! {
     pub static ref CPP: PathBuf = WORKSPACE.join("cpp");
     pub static ref LIBSTATIC: PathBuf = CPP.join("libstatic");
     pub static ref INCLUDE: PathBuf = CPP.join("src").join("main").join("include");
+    pub static ref FFI_INCLUDE: PathBuf = INCLUDE.join("ffi");
 }

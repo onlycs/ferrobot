@@ -3,6 +3,7 @@ mod ffi;
 pub mod prelude;
 
 pub use config::*;
+#[cfg(feature = "build")]
 use interoptopus::inventory::InventoryBuilder;
 use prelude::*;
 use thiserror::Error;
@@ -12,8 +13,23 @@ use crate::context::Context;
 
 #[derive(Error, Debug)]
 pub enum Error {
-    #[error("Motor with ID {0} already exists")]
+    #[error("Motor (ID {0}) already exists")]
     AlreadyExists(u8),
+    #[error("Invalid configuration for motor (ID {0})")]
+    InvalidConfig(u8),
+}
+
+impl ffi::Response {
+    pub fn to_result(self, can_id: u8) -> Result<(), Error> {
+        match self {
+            ffi::Response::Ok => Ok(()),
+            ffi::Response::MotorExists => Err(Error::AlreadyExists(can_id)),
+            ffi::Response::BadConfig => Err(Error::InvalidConfig(can_id)),
+            ffi::Response::BadCommand => {
+                panic!("An invalid command was sent to the motor. This is a bug; please report it.")
+            }
+        }
+    }
 }
 
 #[derive(Clone, Copy, Debug, PartialEq)]
@@ -43,19 +59,16 @@ pub struct SparkMax {
 }
 
 impl SparkMax {
-    pub async fn new(config: SparkMaxConfig) -> Result<Self, Error> {
+    pub async fn new(can_id: u8, config: SparkMaxConfig) -> Result<Self, Error> {
         let ctx = Context::instance().read().await;
-        let can_id = config.motor.can_id;
         let this = Self { can_id };
 
         if ctx.device_exists(&this).await {
             return Err(Error::AlreadyExists(can_id));
         }
 
-        info!("Creating SparkMax with ID {} ", can_id);
-
-        let create = device_ffi::Command::new(&this, spark_ffi::Command::create(config));
-        ctx.command(create).await;
+        let command = spark_ffi::Command::create(config);
+        ctx.command(&this, command).await.to_result(can_id)?;
 
         Ok(this)
     }
@@ -65,25 +78,27 @@ impl SparkMax {
         unsafe { ctx.data(self).copied().map(Data::from) }
     }
 
-    pub async fn set_position(&self, position: Angle) {
+    pub async fn set_position(&self, position: Angle) -> Result<(), Error> {
         debug!("Setting spark {} position to {:?}", self.can_id, position);
 
         let position = position.get::<revolution>();
         let ctx = Context::instance().read().await;
-        let command = device_ffi::Command::new(self, spark_ffi::Command::set_position(position));
-        ctx.command(command).await;
+        let command = spark_ffi::Command::set_position(position);
+
+        ctx.command(self, command).await.to_result(self.can_id)
     }
 
-    pub async fn set_velocity(&self, velocity: AngularVelocity) {
+    pub async fn set_velocity(&self, velocity: AngularVelocity) -> Result<(), Error> {
         debug!("Setting spark {} velocity to {:?}", self.can_id, velocity);
 
         let velocity = velocity.get::<rpm>();
         let ctx = Context::instance().read().await;
-        let command = device_ffi::Command::new(self, spark_ffi::Command::set_velocity(velocity));
-        ctx.command(command).await;
+        let command = spark_ffi::Command::set_velocity(velocity);
+
+        ctx.command(self, command).await.to_result(self.can_id)
     }
 
-    pub async fn set_output(&self, output: f64) {
+    pub async fn set_output(&self, output: f64) -> Result<(), Error> {
         if !(-1.0..=1.0).contains(&output) {
             panic!("`output` must be between -1.0 and 1.0");
         }
@@ -91,8 +106,9 @@ impl SparkMax {
         debug!("Setting spark {} output to {}", self.can_id, output);
 
         let ctx = Context::instance().read().await;
-        let command = device_ffi::Command::new(self, spark_ffi::Command::set_output(output));
-        ctx.command(command).await;
+        let command = spark_ffi::Command::set_output(output);
+
+        ctx.command(self, command).await.to_result(self.can_id)
     }
 }
 
@@ -100,7 +116,7 @@ impl super::Device for SparkMax {
     type CommandFFI = spark_ffi::Command;
     type DataFFI = spark_ffi::Data;
 
-    const TYPE: super::ffi::DeviceType = super::ffi::DeviceType::SparkMax;
+    const TYPE: device_ffi::Type = device_ffi::Type::SparkMax;
 
     fn id(&self) -> u8 {
         self.can_id

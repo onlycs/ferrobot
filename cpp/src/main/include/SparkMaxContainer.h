@@ -13,7 +13,7 @@ namespace spark_ffi = ffi::device::spark;
 class SparkMaxContainer
 {
 public:
-	void HandleCommand(uint8_t can_id, const spark_ffi::Command *command);
+	spark_ffi::Response HandleCommand(uint8_t can_id, const spark_ffi::Command *command);
 
 private:
 	void HandleCreate(uint8_t can_id, const spark_ffi::config::SparkMaxConfig *config);

@@ -23,26 +23,7 @@ Robot::Robot()
  * <p> This runs after the mode specific periodic functions, but before
  * LiveWindow and SmartDashboard integrated updating.
  */
-void Robot::RobotPeriodic()
-{
-	ffi::DeviceCommands commands = ffi::collect();
-
-	for (size_t i = 0; i < commands.len; i++)
-	{
-		const device::Command &command = commands.data[i];
-		switch (command.device.kind)
-		{
-		case device::DeviceType::DeviceTypeSparkMax:
-			m_sparkMaxContainer.HandleCommand(command.device.id, (const spark_ffi::Command *)command.command);
-			break;
-		default:
-			std::cerr << "[ERROR] Unknown device type: " << (int)command.device.kind << std::endl;
-			break;
-		}
-	}
-
-	ffi::device_commands_free(commands);
-}
+void Robot::RobotPeriodic() {}
 
 /**
  * This function is called once each time the robot enters Disabled mode. You
@@ -82,6 +63,14 @@ void Robot::SimulationInit() {}
  * This function is called periodically whilst in simulation.
  */
 void Robot::SimulationPeriodic() {}
+
+extern "C"
+{
+	void *handle_command(device::Command command)
+	{
+		return Robot::m_robotContainer.HandleCommand(command);
+	}
+}
 
 #ifndef RUNNING_FRC_TESTS
 int main()

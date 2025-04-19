@@ -8,6 +8,9 @@ pub struct Arguments {
 
 #[derive(clap::Subcommand)]
 pub enum Operation {
+    /// Regenerate FFI Bindings
+    Regenerate,
+
     /// Build the Robot Code
     Build {
         /// Debug or Release

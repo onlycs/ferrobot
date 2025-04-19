@@ -4,8 +4,10 @@ version = "0.1.0"
 edition = "2024"
 
 [dependencies]
-interoptopus = { git = "https://github.com/onlycs/interoptopus", branch = "cpp-namespaces" }
+interoptopus = { git = "https://github.com/onlycs/interoptopus", branch = "cpp-namespaces", optional = true }
 interoptopus_backend_c = { git = "https://github.com/onlycs/interoptopus", branch = "cpp-namespaces", optional = true }
+# interoptopus = { path = "../../../interoptopus/crates/core", optional = true }
+# interoptopus_backend_c = { path = "../../../interoptopus/crates/backend_c", optional = true }
 async-std = "1.13.1"
 thiserror = { git = "https://github.com/onlycs/thiserror", version = "2.0.11" }
 typed-builder = "0.21.0"
@@ -16,9 +18,11 @@ uom = { version = "0.36.0", features = [
     "std",
     "f64",
 ], default-features = false }
+libc = "0.2.172"
 
 [lib]
 crate-type = ["staticlib", "cdylib", "rlib"]
 
 [features]
-build = ["dep:interoptopus_backend_c"]
+default = []
+build = ["dep:interoptopus_backend_c", "dep:interoptopus"]

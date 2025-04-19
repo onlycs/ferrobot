@@ -11,4 +11,6 @@ syn = "2.0.100"
 thiserror = { git = "https://github.com/onlycs/thiserror", version = "2.0.11" }
 ferrobot = { path = "../ferrobot", features = ["build"] }
 interoptopus = { git = "https://github.com/onlycs/interoptopus", branch = "cpp-namespaces" }
-interoptopus_backend_c = { git = "https://github.com/onlycs/interoptopus", branch = "cpp-namespaces" }
+interoptopus_backend_c = { git = "https://github.com/onlycs/interoptopus", branch = "cpp-namespaces", optional = true }
+# interoptopus = { path = "../../../interoptopus/crates/core" }
+# interoptopus_backend_c = { path = "../../../interoptopus/crates/backend_c", optional = true }

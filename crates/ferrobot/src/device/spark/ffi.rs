@@ -1,10 +1,11 @@
 use std::{ffi::c_void, mem};
 
+#[cfg(feature = "build")]
 use interoptopus::{extra_type, ffi_type, inventory::InventoryBuilder};
 
-use super::SparkMaxConfig;
+use super::prelude::*;
 
-#[ffi_type(namespace = "ffi::device::spark")]
+#[cfg_attr(feature = "build", ffi_type(namespace = "ffi::device::spark"))]
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
 pub(crate) enum CommandType {
     SetPosition,
@@ -13,7 +14,7 @@ pub(crate) enum CommandType {
     Create,
 }
 
-#[ffi_type(namespace = "ffi::device::spark")]
+#[cfg_attr(feature = "build", ffi_type(namespace = "ffi::device::spark"))]
 #[derive(Clone, Debug, PartialEq, Eq, Hash)]
 pub(crate) struct Command {
     kind: CommandType,
@@ -42,7 +43,7 @@ impl Command {
         }
     }
 
-    pub(crate) fn create(config: SparkMaxConfig) -> Self {
+    pub(crate) fn create(config: spark::SparkMaxConfig) -> Self {
         Self {
             kind: CommandType::Create,
             data: Box::into_raw(Box::new(config)) as *const c_void,
@@ -57,13 +58,17 @@ impl Drop for Command {
                 mem::drop(Box::from_raw(self.data as *mut f64))
             },
             CommandType::Create => unsafe {
-                mem::drop(Box::from_raw(self.data as *mut SparkMaxConfig))
+                mem::drop(Box::from_raw(self.data as *mut spark::SparkMaxConfig))
             },
         }
     }
 }
 
-#[ffi_type(namespace = "ffi::device::spark")]
+impl device::Command for Command {
+    type Response = Response;
+}
+
+#[cfg_attr(feature = "build", ffi_type(namespace = "ffi::device::spark"))]
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub(crate) struct Data {
     pub(crate) connected: bool,
@@ -73,9 +78,21 @@ pub(crate) struct Data {
     pub(crate) current: f64,
 }
 
-pub(super) fn __ffi_inventory(builder: InventoryBuilder) -> InventoryBuilder {
+#[allow(dead_code)]
+#[cfg_attr(feature = "build", ffi_type(namespace = "ffi::device::spark"))]
+#[derive(Clone, Copy, Debug, PartialEq)]
+pub(crate) enum Response {
+    Ok,
+    MotorExists,
+    BadConfig,
+    BadCommand,
+}
+
+#[cfg(feature = "build")]
+pub(crate) fn __ffi_inventory(builder: InventoryBuilder) -> InventoryBuilder {
     builder
         .register(extra_type!(CommandType))
         .register(extra_type!(Command))
         .register(extra_type!(Data))
+        .register(extra_type!(Response))
 }

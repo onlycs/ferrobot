@@ -1,21 +1,22 @@
 use std::ffi::c_void;
 
-use interoptopus::{extra_type, ffi_type, inventory::InventoryBuilder};
+#[cfg(feature = "build")]
+use interoptopus::{extra_type, ffi_function, ffi_type, function, inventory::InventoryBuilder};
 
 use super::spark::SparkMax;
 
-#[ffi_type(namespace = "ffi::device")]
+#[cfg_attr(feature = "build", ffi_type(namespace = "ffi::device"))]
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
-pub(crate) enum DeviceType {
+pub(crate) enum Type {
     SparkMax,
     NavX,
     XboxController,
 }
 
-#[ffi_type(namespace = "ffi::device")]
+#[cfg_attr(feature = "build", ffi_type(namespace = "ffi::device"))]
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
 pub(crate) struct Device {
-    kind: DeviceType,
+    kind: Type,
     id: u8,
 }
 
@@ -28,7 +29,7 @@ impl<D: super::Device> From<&D> for Device {
     }
 }
 
-#[ffi_type(namespace = "ffi::device")]
+#[cfg_attr(feature = "build", ffi_type(namespace = "ffi::device"))]
 #[derive(Debug)]
 pub(crate) struct Data {
     pub(crate) device: Device,
@@ -39,11 +40,11 @@ impl Drop for Data {
     fn drop(&mut self) {
         unsafe {
             match self.device.kind {
-                DeviceType::SparkMax => drop(Box::from_raw(
+                Type::SparkMax => drop(Box::from_raw(
                     self.data as *mut <SparkMax as super::Device>::DataFFI,
                 )),
-                DeviceType::NavX => unimplemented!(), // TODO: NavX
-                DeviceType::XboxController => unimplemented!(), // TODO: XboxController
+                Type::NavX => unimplemented!(), // TODO: NavX
+                Type::XboxController => unimplemented!(), // TODO: XboxController
             }
         }
     }
@@ -53,7 +54,7 @@ impl Drop for Data {
 unsafe impl Send for Data {}
 unsafe impl Sync for Data {}
 
-#[ffi_type(namespace = "ffi::device")]
+#[cfg_attr(feature = "build", ffi_type(namespace = "ffi::device"))]
 #[derive(Debug)]
 pub(crate) struct Command {
     pub(crate) device: Device,
@@ -73,23 +74,30 @@ impl Drop for Command {
     fn drop(&mut self) {
         unsafe {
             match self.device.kind {
-                DeviceType::SparkMax => drop(Box::from_raw(
+                Type::SparkMax => drop(Box::from_raw(
                     self.command as *mut <SparkMax as super::Device>::CommandFFI,
                 )),
-                DeviceType::NavX => unimplemented!(), // TODO: NavX
-                DeviceType::XboxController => unimplemented!(), // TODO: XboxController
+                Type::NavX => unimplemented!(), // TODO: NavX
+                Type::XboxController => unimplemented!(), // TODO: XboxController
             }
         }
     }
+}
+
+#[cfg_attr(feature = "build", ffi_function(namespace = "ffi::device"))]
+fn command_free(command: Command) {
+    drop(command);
 }
 
 // Pointer is read-only
 unsafe impl Send for Command {}
 unsafe impl Sync for Command {}
 
+#[cfg(feature = "build")]
 pub(super) fn __ffi_inventory(builder: InventoryBuilder) -> InventoryBuilder {
     builder
-        .register(extra_type!(DeviceType))
+        .register(extra_type!(Type))
         .register(extra_type!(Data))
         .register(extra_type!(Command))
+        .register(function!(command_free))
 }

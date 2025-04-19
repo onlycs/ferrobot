@@ -15,25 +15,35 @@ use std::{env, fs};
 use args::{Arguments, Operation};
 use clap::Parser;
 use error::TaskResult;
-use paths::LIBSTATIC;
 
 const ATHENA_TARGET: &str = "arm-unknown-linux-gnueabi";
 const HOST_TARGET: &str = "x86_64-unknown-linux-gnu";
 
 fn run(args: Arguments) -> TaskResult {
     match args.operation {
-        Operation::Build { mode } => {
-            // clear libstatic
-            if LIBSTATIC.exists() {
-                fs::remove_dir_all(&*LIBSTATIC)?;
+        Operation::Regenerate => {
+            // clear ffi dir
+            if paths::FFI_INCLUDE.exists() {
+                fs::remove_dir_all(&*paths::FFI_INCLUDE)?;
             }
-            fs::create_dir_all(&*LIBSTATIC)?;
+            fs::create_dir_all(&*paths::FFI_INCLUDE)?;
 
             // run interoptopus
-            let mut interop = ferrobot::__ffi_interop();
+            let mut interop = ferrobot::build::__ffi_interop();
 
-            // write to file
+            // write bindings
             interop.write_all(&paths::INCLUDE)?;
+        }
+        Operation::Build { mode } => {
+            run(Arguments {
+                operation: Operation::Regenerate,
+            })?;
+
+            // clear libstatic
+            if paths::LIBSTATIC.exists() {
+                fs::remove_dir_all(&*paths::LIBSTATIC)?;
+            }
+            fs::create_dir_all(&*paths::LIBSTATIC)?;
 
             // run cargo build
             util::cargo(&["build", "--target", ATHENA_TARGET], mode)?;

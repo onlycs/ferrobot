@@ -7,16 +7,15 @@
 #include <optional>
 
 #include <frc/TimedRobot.h>
-#include <frc2/command/CommandPtr.h>
-#include <rev/SparkMax.h>
-#include <studica/AHRS.h>
-#include <SparkMaxContainer.h>
+#include <RobotContainer.h>
 
 using namespace rev;
 
 class Robot : public frc::TimedRobot
 {
 public:
+	inline static RobotContainer m_robotContainer = RobotContainer();
+
 	Robot();
 	void RobotPeriodic() override;
 	void DisabledInit() override;
@@ -30,5 +29,15 @@ public:
 	void SimulationPeriodic() override;
 
 private:
-	SparkMaxContainer m_sparkMaxContainer = SparkMaxContainer();
 };
+
+#ifdef __cplusplus
+extern "C"
+{
+#endif
+	// C function to start the robot
+	void *handle_command(device::Command command);
+
+#ifdef __cplusplus
+}
+#endif

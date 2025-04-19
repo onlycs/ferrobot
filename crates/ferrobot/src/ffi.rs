@@ -1,41 +1,12 @@
-use std::mem;
+use std::{
+    ffi::c_void,
+    marker::PhantomData,
+    ops::{Deref, DerefMut},
+};
 
-use interoptopus::{extra_type, ffi_function, ffi_type, function, inventory::InventoryBuilder};
+use interoptopus::ffi_type;
 
 use crate::device::prelude::*;
-
-#[ffi_type(namespace = "ffi")]
-#[derive(Debug)]
-pub(crate) struct DeviceCommands {
-    data: *const device_ffi::Command,
-    len: u32,
-    cap: u32,
-}
-
-impl DeviceCommands {
-    pub(crate) fn new(from: Vec<device_ffi::Command>) -> Self {
-        let ffi = DeviceCommands {
-            data: from.as_ptr(),
-            cap: from.capacity() as u32,
-            len: from.len() as u32,
-        };
-
-        mem::forget(from);
-
-        ffi
-    }
-}
-
-impl Drop for DeviceCommands {
-    fn drop(&mut self) {
-        unsafe {
-            Vec::<u8>::from_raw_parts(self.data as *mut u8, self.len as usize, self.cap as usize);
-        }
-    }
-}
-
-unsafe impl Send for DeviceCommands {}
-unsafe impl Sync for DeviceCommands {}
 
 #[ffi_type(namespace = "ffi")]
 #[derive(Debug)]
@@ -75,22 +46,53 @@ impl Drop for DeviceDatas {
 unsafe impl Send for DeviceDatas {}
 unsafe impl Sync for DeviceDatas {}
 
-#[ffi_function(namespace = "ffi")]
-pub(crate) unsafe fn device_commands_free(commands: DeviceCommands) {
-    unsafe {
-        Vec::<u8>::from_raw_parts(
-            commands.data as *mut u8,
-            commands.len as usize,
-            commands.cap as usize,
-        );
+pub(crate) struct CBox<T> {
+    ptr: *mut c_void,
+    _ph: PhantomData<T>,
+}
+
+impl<T> CBox<T> {
+    pub(crate) unsafe fn new(ptr: *mut c_void) -> Self {
+        Self {
+            ptr,
+            _ph: PhantomData,
+        }
     }
 }
 
-pub(super) fn __ffi_inventory(builder: InventoryBuilder) -> InventoryBuilder {
-    builder
-        .register(extra_type!(DeviceCommands))
-        .register(extra_type!(DeviceDatas))
-        .register(function!(device_commands_free))
+impl<T> Deref for CBox<T> {
+    type Target = T;
+
+    fn deref(&self) -> &Self::Target {
+        unsafe { &*(self.ptr as *const T) }
+    }
+}
+
+impl<T> DerefMut for CBox<T> {
+    fn deref_mut(&mut self) -> &mut Self::Target {
+        unsafe { &mut *(self.ptr as *mut T) }
+    }
+}
+
+impl<T> Drop for CBox<T> {
+    fn drop(&mut self) {
+        // it was created in libc, and only there can it be destroyed
+        unsafe { libc::free(self.ptr) }
+    }
+}
+
+unsafe impl<T: Send> Send for CBox<T> {}
+unsafe impl<T: Sync> Sync for CBox<T> {}
+
+#[cfg(feature = "build")]
+pub(super) mod build {
+    use interoptopus::{extra_type, inventory::InventoryBuilder};
+
+    use super::*;
+
+    pub(crate) fn __ffi_inventory(builder: InventoryBuilder) -> InventoryBuilder {
+        builder.register(extra_type!(DeviceDatas))
+    }
 }
 
 // #[allow(clippy::module_inception)]

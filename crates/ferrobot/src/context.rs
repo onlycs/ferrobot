@@ -1,12 +1,12 @@
-use std::{
-    collections::{HashSet, VecDeque},
-    sync::{Arc, Mutex},
-};
+use std::{collections::HashSet, ffi::c_void, sync::Arc};
 
 use async_std::sync::{RwLock, RwLockReadGuard};
 use interoptopus::{extra_type, ffi_type, inventory::InventoryBuilder};
 
-use crate::{device::prelude::*, ffi::DeviceDatas};
+use crate::{
+    device::prelude::*,
+    ffi::{CBox, DeviceDatas},
+};
 
 #[ffi_type(namespace = "ffi")]
 #[derive(Debug)]
@@ -18,19 +18,20 @@ pub(crate) struct ContextFFI {
 pub(crate) struct ContextInner {
     data: Vec<device_ffi::Data>,
     devices: RwLock<HashSet<device_ffi::Device>>,
-    queue: Arc<Mutex<VecDeque<device_ffi::Command>>>,
 }
 
 impl ContextInner {
-    pub(crate) async fn command(&self, command: device_ffi::Command) {
-        self.devices.write().await.insert(command.device);
+    pub(crate) async fn command<D: device::Device>(
+        &self,
+        device: &D,
+        command: D::CommandFFI,
+    ) -> CBox<<D::CommandFFI as device::Command>::Response> {
+        self.devices.write().await.insert(device.into());
 
-        let mut queue = match self.queue.lock() {
-            Ok(queue) => queue,
-            Err(poisoned) => poisoned.into_inner(),
-        };
+        let command = device_ffi::Command::new(device, command);
+        let res = unsafe { handle_command(command) };
 
-        queue.push_back(command);
+        unsafe { CBox::new(res) }
     }
 
     pub(crate) async fn device_exists<D: Device>(&self, device: &D) -> bool {
@@ -46,6 +47,10 @@ impl ContextInner {
     }
 }
 
+unsafe extern "C" {
+    fn handle_command(command: device_ffi::Command) -> *mut c_void;
+}
+
 pub struct Context(Arc<RwLock<ContextInner>>);
 
 static mut CONTEXT: Option<Context> = None;
@@ -55,12 +60,9 @@ impl Context {
     pub(crate) fn instance() -> &'static Context {
         unsafe {
             if CONTEXT.is_none() {
-                let queue = crate::QUEUE.as_ref().unwrap();
-
                 CONTEXT = Some(Self::new(ContextInner {
                     data: vec![],
                     devices: RwLock::new(HashSet::new()),
-                    queue: Arc::clone(queue),
                 }));
             }
 
@@ -82,6 +84,7 @@ impl Context {
     }
 }
 
+#[cfg(feature = "build")]
 pub(super) fn __ffi_inventory(builder: InventoryBuilder) -> InventoryBuilder {
     builder.register(extra_type!(ContextFFI))
 }
