@@ -40,12 +40,10 @@ fn supply(context: context::ContextFFI) {
 
 #[cfg(feature = "build")]
 pub mod build {
-    use interoptopus::{
-        backend::NamespaceMappings,
-        function,
-        inventory::{Inventory, InventoryBuilder},
-    };
+    use interoptopus::{backend::NamespaceMappings, inventory::Inventory};
     use interoptopus_backend_c::{EnumVariants, Interop, InteropBuilder, NameCase};
+
+    use crate::prelude::*;
 
     fn __ffi_inventory() -> Inventory {
         let mut builder = InventoryBuilder::new();

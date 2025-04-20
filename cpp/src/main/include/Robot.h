@@ -34,5 +34,5 @@ private:
 extern "C"
 {
 	// C function to start the robot
-	ffi::Response handle_command(device::Command command);
+	ffi::Response handle_command(device::Command *command);
 }

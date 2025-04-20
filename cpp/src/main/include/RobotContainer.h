@@ -10,7 +10,7 @@ class RobotContainer
 {
 public:
 	RobotContainer();
-	ffi::Response HandleCommand(device::Command command);
+	ffi::Response HandleCommand(device::Command *command);
 
 private:
 	SparkMaxContainer m_sparkMaxContainer = SparkMaxContainer();

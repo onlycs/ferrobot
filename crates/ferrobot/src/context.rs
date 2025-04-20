@@ -18,7 +18,7 @@ pub(crate) struct Response {
 }
 
 unsafe extern "C" {
-    fn handle_command(command: device_ffi::Command) -> Response;
+    fn handle_command(command: *const device_ffi::Command) -> Response;
 }
 
 #[allow(private_bounds, private_interfaces)]
@@ -72,7 +72,7 @@ impl Context {
         }
 
         let command = device_ffi::Command::new(device, command);
-        let res = unsafe { handle_command(command) };
+        let res = unsafe { handle_command(&command) };
 
         if res.ok {
             return Ok(Ok(res.data as *const _));

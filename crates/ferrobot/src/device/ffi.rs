@@ -81,11 +81,6 @@ impl Drop for Command {
     }
 }
 
-#[ffi_function(namespace = "ffi::device")]
-fn command_free(command: Command) {
-    drop(command);
-}
-
 // Pointer is read-only
 unsafe impl Send for Command {}
 unsafe impl Sync for Command {}
@@ -96,5 +91,4 @@ pub(super) fn __ffi_inventory(builder: InventoryBuilder) -> InventoryBuilder {
         .register(extra_type!(Type))
         .register(extra_type!(Data))
         .register(extra_type!(Command))
-        .register(function!(command_free))
 }
