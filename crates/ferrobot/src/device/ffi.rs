@@ -1,7 +1,5 @@
 use std::ffi::c_void;
 
-use interoptopus::{ffi_function, ffi_type};
-
 use super::prelude::*;
 
 #[ffi_type(namespace = "ffi::device")]

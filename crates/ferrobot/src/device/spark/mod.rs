@@ -5,38 +5,42 @@ pub mod prelude;
 use std::{backtrace::Backtrace, panic::Location};
 
 pub use config::*;
+pub use ffi::Error as FFIError;
 use prelude::*;
 use thiserror::Error;
 use uom::si::{angle::revolution, angular_velocity::revolution_per_minute as rpm};
 
 use crate::context::Context;
 
+#[allow(private_interfaces)]
 #[derive(Error, Debug)]
 pub enum Error {
-    #[error("Motor (ID {0}) already exists")]
-    AlreadyExists(u8),
-    #[error("Invalid configuration for motor (ID {0})")]
-    InvalidConfig(u8),
-    #[error("Bad `set_output` command: Expected -1.0 to 1.0, got {0}")]
+    #[error("Incorrect parameter for `set_output`: Expected -1.0 to 1.0, got {0}")]
     InvalidOutput(f64),
     #[error("At {location}: Context error: {source:?}")]
-    ContextError {
+    Context {
         #[from]
         source: context::Error,
         location: &'static Location<'static>,
         backtrace: Backtrace,
     },
+    #[error("At {location}: FFI error: {source:?}")]
+    FFI {
+        #[from]
+        source: FFIError,
+        location: &'static Location<'static>,
+        backtrace: Backtrace,
+    },
 }
 
-impl ffi::Response {
-    pub fn to_result(self, can_id: u8) -> Result<(), Error> {
-        match self {
-            ffi::Response::Ok => Ok(()),
-            ffi::Response::MotorExists => Err(Error::AlreadyExists(can_id)),
-            ffi::Response::BadConfig => Err(Error::InvalidConfig(can_id)),
-            ffi::Response::BadCommand => {
-                panic!("An invalid command was sent to the motor. This is a bug; please report it.")
-            }
+impl From<*const FFIError> for Error {
+    #[allow(clippy::not_unsafe_ptr_arg_deref)]
+    #[track_caller]
+    fn from(value: *const FFIError) -> Self {
+        Self::FFI {
+            source: unsafe { &*value }.clone(),
+            location: Location::caller(),
+            backtrace: Backtrace::capture(),
         }
     }
 }
@@ -69,39 +73,41 @@ pub struct SparkMax {
 
 impl SparkMax {
     pub async fn new(can_id: u8, config: SparkMaxConfig) -> Result<Self, Error> {
-        let ctx = Context::instance().read().await;
+        let ctx = Context::instance();
         let this = Self { can_id };
         let command = spark_ffi::Command::create(config);
 
         ctx.add_device(&this).await?;
-        ctx.command(&this, command).await?.to_result(can_id)?;
+        ctx.command(&this, command).await??;
 
         Ok(this)
     }
 
     pub async fn data(&self) -> Option<Data> {
-        let ctx = Context::instance().read().await;
-        unsafe { ctx.data(self).copied().map(Data::from) }
+        let ctx = Context::instance();
+        unsafe { ctx.data(self).await.copied().map(Data::from) }
     }
 
     pub async fn set_position(&self, position: Angle) -> Result<(), Error> {
         debug!("Setting spark {} position to {:?}", self.can_id, position);
 
         let position = position.get::<revolution>();
-        let ctx = Context::instance().read().await;
+        let ctx = Context::instance();
         let command = spark_ffi::Command::set_position(position);
 
-        ctx.command(self, command).await?.to_result(self.can_id)
+        ctx.command(self, command).await??;
+        Ok(())
     }
 
     pub async fn set_velocity(&self, velocity: AngularVelocity) -> Result<(), Error> {
         debug!("Setting spark {} velocity to {:?}", self.can_id, velocity);
 
         let velocity = velocity.get::<rpm>();
-        let ctx = Context::instance().read().await;
+        let ctx = Context::instance();
         let command = spark_ffi::Command::set_velocity(velocity);
 
-        ctx.command(self, command).await?.to_result(self.can_id)
+        ctx.command(self, command).await??;
+        Ok(())
     }
 
     pub async fn set_output(&self, output: f64) -> Result<(), Error> {
@@ -111,10 +117,11 @@ impl SparkMax {
 
         debug!("Setting spark {} output to {}", self.can_id, output);
 
-        let ctx = Context::instance().read().await;
+        let ctx = Context::instance();
         let command = spark_ffi::Command::set_output(output);
 
-        ctx.command(self, command).await?.to_result(self.can_id)
+        ctx.command(self, command).await??;
+        Ok(())
     }
 }
 

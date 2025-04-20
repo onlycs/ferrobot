@@ -6,6 +6,7 @@
 #include <rev/config/SparkMaxConfig.h>
 #include <map>
 #include <memory>
+#include <optional>
 
 using namespace rev::spark;
 namespace spark_ffi = ffi::device::spark;
@@ -13,12 +14,12 @@ namespace spark_ffi = ffi::device::spark;
 class SparkMaxContainer
 {
 public:
-	spark_ffi::Response HandleCommand(uint8_t can_id, const spark_ffi::Command *command);
+	std::optional<spark_ffi::Error> HandleCommand(uint8_t can_id, const spark_ffi::Command *command);
 
 private:
 	void HandleCreate(uint8_t can_id, const spark_ffi::config::SparkMaxConfig *config);
 
-	static SparkBase::MotorType Convert(const spark_ffi::config::MotorType *motor_type);
+	static SparkBase::MotorType Convert(spark_ffi::config::MotorType motor_type);
 	static std::unique_ptr<SparkMaxConfig> Convert(const spark_ffi::config::SparkMaxConfig *config);
 	static ClosedLoopConfig::FeedbackSensor Convert(spark_ffi::config::FeedbackSensor sensor);
 	static SparkBaseConfig::IdleMode Convert(spark_ffi::config::IdleMode mode);

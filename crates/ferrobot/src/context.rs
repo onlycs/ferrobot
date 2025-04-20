@@ -1,13 +1,9 @@
 use std::{collections::HashSet, ffi::c_void, sync::Arc};
 
-use async_std::sync::{RwLock, RwLockReadGuard};
-use interoptopus::ffi_type;
+use async_std::sync::RwLock;
 use thiserror::Error;
 
-use crate::{
-    device::prelude::*,
-    ffi::{CBox, DeviceDatas},
-};
+use crate::{device::prelude::*, ffi::DeviceDatas};
 
 #[ffi_type(namespace = "ffi")]
 #[derive(Debug)]
@@ -15,26 +11,62 @@ pub(crate) struct ContextFFI {
     pub(crate) devices: DeviceDatas,
 }
 
+#[ffi_type(namespace = "ffi")]
+pub(crate) struct Response {
+    ok: bool,
+    data: *const c_void,
+}
+
+unsafe extern "C" {
+    fn handle_command(command: device_ffi::Command) -> Response;
+}
+
+#[allow(private_bounds, private_interfaces)]
 #[derive(Debug, Error)]
 pub enum Error {
     #[error("Device ({0:?} {1}) not found in context")]
     DeviceNotFound(device_ffi::Type, u8),
+
     #[error("Device ({0:?} {1}) already registered")]
     DeviceAlreadyRegistered(device_ffi::Type, u8),
 }
 
-#[derive(Debug)]
-pub(crate) struct ContextInner {
-    data: Vec<device_ffi::Data>,
-    devices: RwLock<HashSet<device_ffi::Device>>,
+pub struct Context {
+    data: Arc<RwLock<Vec<device_ffi::Data>>>,
+    devices: Arc<RwLock<HashSet<device_ffi::Device>>>,
 }
 
-impl ContextInner {
+lazy_static! {
+    static ref CONTEXT: Context = Context::new();
+}
+
+impl Context {
+    pub(crate) fn instance() -> &'static Context {
+        &CONTEXT
+    }
+
+    fn new() -> Self {
+        Self {
+            data: Arc::new(RwLock::new(Vec::new())),
+            devices: Arc::new(RwLock::new(HashSet::new())),
+        }
+    }
+
+    pub(crate) async fn replace(&self, ffi: DeviceDatas) {
+        *self.data.write().await = ffi.to_vec();
+    }
+
     pub(crate) async fn command<D: Device>(
         &self,
         device: &D,
         command: D::CommandFFI,
-    ) -> Result<CBox<<D::CommandFFI as device::Command>::Response>, Error> {
+    ) -> Result<
+        Result<
+            *const <D::CommandFFI as device::Command>::Ok,
+            *const <D::CommandFFI as device::Command>::Error,
+        >,
+        Error,
+    > {
         if !self.device_exists(device).await {
             return Err(Error::DeviceNotFound(D::TYPE, device.id()));
         }
@@ -42,7 +74,11 @@ impl ContextInner {
         let command = device_ffi::Command::new(device, command);
         let res = unsafe { handle_command(command) };
 
-        Ok(unsafe { CBox::new(res) })
+        if res.ok {
+            return Ok(Ok(res.data as *const _));
+        }
+
+        Ok(Err(res.data as *const _))
     }
 
     pub(crate) async fn add_device<D: Device>(&self, device: &D) -> Result<(), Error> {
@@ -60,53 +96,22 @@ impl ContextInner {
         self.devices.read().await.contains(&device.into())
     }
 
-    pub(crate) unsafe fn data<D: Device>(&self, device: &D) -> Option<&D::DataFFI> {
+    pub(crate) async unsafe fn data<'a, D: Device + 'static>(
+        &'a self,
+        device: &D,
+    ) -> Option<&'a D::DataFFI> {
         let device = device.into();
-        let data = self.data.iter().find(|d| d.device == device)?;
-        let data = unsafe { &*(data.data as *const D::DataFFI) };
+        let data = self.data.read().await;
+        let data = data.iter().find(|d| d.device == device)?;
+        let data = data.data as *const D::DataFFI;
 
-        Some(data)
-    }
-}
-
-unsafe extern "C" {
-    fn handle_command(command: device_ffi::Command) -> *mut c_void;
-}
-
-pub struct Context(Arc<RwLock<ContextInner>>);
-
-static mut CONTEXT: Option<Context> = None;
-
-impl Context {
-    #[allow(static_mut_refs)]
-    pub(crate) fn instance() -> &'static Context {
-        unsafe {
-            if CONTEXT.is_none() {
-                CONTEXT = Some(Self::new(ContextInner {
-                    data: vec![],
-                    devices: RwLock::new(HashSet::new()),
-                }));
-            }
-
-            CONTEXT.as_ref().unwrap()
-        }
-    }
-
-    fn new(inner: ContextInner) -> Self {
-        Self(Arc::new(RwLock::new(inner)))
-    }
-
-    pub(crate) async fn read(&self) -> RwLockReadGuard<'_, ContextInner> {
-        self.0.read().await
-    }
-
-    pub(crate) async fn replace(&self, ffi: DeviceDatas) {
-        let mut context = self.0.write().await;
-        context.data = ffi.to_vec();
+        unsafe { Some(&*data) }
     }
 }
 
 #[cfg(feature = "build")]
 pub(super) fn __ffi_inventory(builder: InventoryBuilder) -> InventoryBuilder {
-    builder.register(extra_type!(ContextFFI))
+    builder
+        .register(extra_type!(ContextFFI))
+        .register(extra_type!(Response))
 }

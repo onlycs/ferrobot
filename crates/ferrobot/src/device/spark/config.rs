@@ -1,12 +1,8 @@
 use std::time::Duration;
 
-use interoptopus::ffi_type;
 use typed_builder::TypedBuilder;
 
-use super::{
-    SparkMax,
-    prelude::{device::Device, *},
-};
+use super::{SparkMax, prelude::*};
 
 #[ffi_type(namespace = "ffi::device::spark::config")]
 #[derive(Clone, Copy, Debug, PartialEq, TypedBuilder)]

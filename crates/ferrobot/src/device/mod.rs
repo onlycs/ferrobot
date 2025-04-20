@@ -2,6 +2,8 @@ mod ffi;
 pub mod prelude;
 pub mod spark;
 
+use std::fmt;
+
 use prelude::*;
 
 pub(crate) trait DeviceFFI {
@@ -12,7 +14,8 @@ pub(crate) trait DeviceFFI {
 }
 
 pub(crate) trait Command {
-    type Response;
+    type Error: fmt::Debug;
+    type Ok;
 }
 
 #[allow(private_bounds)]

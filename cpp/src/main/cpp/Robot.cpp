@@ -66,7 +66,7 @@ void Robot::SimulationPeriodic() {}
 
 extern "C"
 {
-	void *handle_command(device::Command command)
+	ffi::Response handle_command(device::Command command)
 	{
 		return Robot::m_robotContainer.HandleCommand(command);
 	}

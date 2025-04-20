@@ -19,6 +19,8 @@ uom = { version = "0.36.0", features = [
     "f64",
 ], default-features = false }
 libc = "0.2.172"
+lazy_static = "1.5.0"
+derive_more = { version = "2.0.1", features = ["debug", "display"] }
 
 [lib]
 crate-type = ["staticlib", "cdylib", "rlib"]

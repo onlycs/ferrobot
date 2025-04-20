@@ -3,24 +3,32 @@
 
 RobotContainer::RobotContainer() {}
 
-void *RobotContainer::HandleCommand(device::Command command)
+ffi::Response RobotContainer::HandleCommand(device::Command command)
 {
+	bool ok = true;
 	void *response_ptr = nullptr;
 
 	switch (command.device.kind)
 	{
 	case device::Type::SparkMax:
 	{
-		response_ptr = malloc(sizeof(spark_ffi::Response));
-		*(spark_ffi::Response *)response_ptr = m_sparkMaxContainer.HandleCommand(command.device.id, (const spark_ffi::Command *)command.command);
+		std::optional<spark_ffi::Error> error = m_sparkMaxContainer.HandleCommand(command.device.id, (const spark_ffi::Command *)command.command);
+		if (error.has_value())
+		{
+			ok = false;
+			response_ptr = malloc(sizeof(spark_ffi::Error));
+			*(spark_ffi::Error *)response_ptr = error.value();
+		}
 		break;
 	}
 	default:
 	{
-		std::cerr << "[ERROR] Unknown device type: " << (int)command.device.kind << std::endl;
-		return nullptr;
+		ok = false;
 	}
 	}
 
-	return (void *)response_ptr;
+	return ffi::Response{
+		.ok = ok,
+		.data = response_ptr,
+	};
 }

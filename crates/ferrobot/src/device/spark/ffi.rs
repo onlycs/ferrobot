@@ -1,6 +1,9 @@
-use std::{ffi::c_void, mem};
+use std::{
+    ffi::{CStr, c_char, c_void},
+    mem,
+};
 
-use interoptopus::ffi_type;
+use interoptopus::ffi::CStrPtr;
 
 use super::prelude::*;
 
@@ -64,7 +67,8 @@ impl Drop for Command {
 }
 
 impl device::Command for Command {
-    type Response = Response;
+    type Error = Error;
+    type Ok = ();
 }
 
 #[ffi_type(namespace = "ffi::device::spark")]
@@ -79,12 +83,55 @@ pub(crate) struct Data {
 
 #[allow(dead_code)]
 #[ffi_type(namespace = "ffi::device::spark")]
-#[derive(Clone, Copy, Debug, PartialEq)]
-pub(crate) enum Response {
-    Ok,
+#[derive(Clone, Copy, Debug, PartialEq, derive_more::Display)]
+pub enum ErrorType {
+    #[display("Tried to create existing motor")]
     MotorExists,
+    #[display("Invalid motor configuration")]
     BadConfig,
+    #[display("Invalid motor command")]
     BadCommand,
+}
+
+#[allow(dead_code)]
+#[ffi_type(namespace = "ffi::device::spark")]
+#[derive(Debug, thiserror::Error)]
+#[error("{kind}: {}", message.as_str().unwrap_or("Unknown error"))]
+pub struct Error {
+    kind: ErrorType,
+    /// Heap-allocated string of which Rust has the responsibility of freeing
+    message: CStrPtr<'static>,
+}
+
+impl Clone for Error {
+    fn clone(&self) -> Self {
+        let c_str = self.message.as_c_str().unwrap();
+        let message = unsafe {
+            let ptr = libc::malloc(c_str.to_bytes().len() + 1) as *mut c_char;
+            libc::strcpy(ptr, c_str.as_ptr());
+            CStr::from_ptr(ptr)
+        };
+
+        Self {
+            message: CStrPtr::from_cstr(message),
+            kind: self.kind,
+        }
+    }
+}
+
+impl Drop for Error {
+    fn drop(&mut self) {
+        let Some(c_str) = self.message.as_c_str() else {
+            return;
+        };
+
+        unsafe {
+            let ptr = c_str.as_ptr() as *const c_char;
+            if !ptr.is_null() {
+                libc::free(ptr as *mut libc::c_void);
+            }
+        }
+    }
 }
 
 #[cfg(feature = "build")]
@@ -93,5 +140,6 @@ pub(crate) fn __ffi_inventory(builder: InventoryBuilder) -> InventoryBuilder {
         .register(extra_type!(CommandType))
         .register(extra_type!(Command))
         .register(extra_type!(Data))
-        .register(extra_type!(Response))
+        .register(extra_type!(ErrorType))
+        .register(extra_type!(Error))
 }

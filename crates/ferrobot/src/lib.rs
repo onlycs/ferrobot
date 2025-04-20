@@ -1,8 +1,9 @@
-#![allow(clippy::arc_with_non_send_sync)]
 #![feature(error_generic_member_access)]
+#![allow(clippy::arc_with_non_send_sync)]
 
 extern crate async_std;
 extern crate interoptopus;
+#[macro_use] extern crate lazy_static;
 extern crate libc;
 extern crate log;
 extern crate thiserror;
@@ -18,7 +19,7 @@ use std::thread;
 
 use async_std::task;
 use context::Context;
-use interoptopus::ffi_function;
+use prelude::*;
 
 async fn main() {
     println!("Hello World!");
@@ -50,7 +51,7 @@ pub mod build {
         let mut builder = InventoryBuilder::new();
 
         builder = crate::device::__ffi_inventory(builder);
-        builder = crate::ffi::build::__ffi_inventory(builder);
+        builder = crate::ffi::__ffi_inventory(builder);
         builder = crate::context::__ffi_inventory(builder);
 
         builder

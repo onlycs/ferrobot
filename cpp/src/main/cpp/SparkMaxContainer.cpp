@@ -1,7 +1,8 @@
 #include "SparkMaxContainer.h"
 #include <iostream>
+#include <fmt/format.h>
 
-spark_ffi::Response SparkMaxContainer::HandleCommand(uint8_t can_id, const spark_ffi::Command *command)
+std::optional<spark_ffi::Error> SparkMaxContainer::HandleCommand(uint8_t can_id, const spark_ffi::Command *command)
 {
 	try
 	{
@@ -14,43 +15,52 @@ spark_ffi::Response SparkMaxContainer::HandleCommand(uint8_t can_id, const spark
 		}
 		default:
 		{
-			std::cerr << "[ERROR] Unknown command type: " << (int)command->kind << std::endl;
+			return spark_ffi::Error{
+				.kind = spark_ffi::ErrorType::BadCommand,
+				.message = strdup(fmt::format("Unknown command type: {}", (int)command->kind).c_str()),
+			};
 			break;
 		}
 		}
 	}
-	catch (const spark_ffi::Response &err)
+	catch (spark_ffi::Error err)
 	{
 		return err;
 	}
 
-	return spark_ffi::Response::Ok;
+	return std::nullopt;
 }
 
 void SparkMaxContainer::HandleCreate(uint8_t can_id, const spark_ffi::config::SparkMaxConfig *config)
 {
 	if (m_motors.contains(can_id))
 	{
-		throw spark_ffi::Response::MotorExists;
+		throw spark_ffi::Error{
+			.kind = spark_ffi::ErrorType::MotorExists,
+			.message = strdup(fmt::format("Motor (id {}) already exists", can_id).c_str()),
+		};
 	}
 
 	std::unique_ptr<SparkMaxConfig> converted_config = Convert(config);
-	SparkBase::MotorType motor_type = Convert(&config->motor.motor_type);
+	SparkBase::MotorType motor_type = Convert(config->motor.motor_type);
 	std::unique_ptr<SparkMax> motor = std::make_unique<SparkMax>(can_id, motor_type);
 	motor->Configure(*converted_config, SparkBase::ResetMode::kResetSafeParameters, SparkBase::PersistMode::kNoPersistParameters);
 	m_motors.emplace(can_id, std::move(motor));
 }
 
-SparkMax::MotorType SparkMaxContainer::Convert(const spark_ffi::config::MotorType *motor_type)
+SparkMax::MotorType SparkMaxContainer::Convert(spark_ffi::config::MotorType motor_type)
 {
-	switch (*motor_type)
+	switch (motor_type)
 	{
 	case spark_ffi::config::MotorType::Brushed:
 		return SparkMax::MotorType::kBrushed;
 	case spark_ffi::config::MotorType::Brushless:
 		return SparkMax::MotorType::kBrushless;
 	default:
-		throw spark_ffi::Response::BadConfig;
+		throw spark_ffi::Error{
+			.kind = spark_ffi::ErrorType::BadConfig,
+			.message = strdup(fmt::format("Unknown motor type: {}", (int)motor_type).c_str()),
+		};
 	}
 }
 
@@ -69,7 +79,10 @@ ClosedLoopConfig::FeedbackSensor SparkMaxContainer::Convert(spark_ffi::config::F
 	case spark_ffi::config::FeedbackSensor::AbsoluteEncoder:
 		return ClosedLoopConfig::FeedbackSensor::kAbsoluteEncoder;
 	default:
-		throw spark_ffi::Response::BadConfig;
+		throw spark_ffi::Error{
+			.kind = spark_ffi::ErrorType::BadConfig,
+			.message = strdup(fmt::format("Unknown feedback sensor: {}", (int)sensor).c_str()),
+		};
 	}
 }
 
@@ -82,7 +95,10 @@ SparkBaseConfig::IdleMode SparkMaxContainer::Convert(spark_ffi::config::IdleMode
 	case spark_ffi::config::IdleMode::Brake:
 		return SparkBaseConfig::IdleMode::kBrake;
 	default:
-		throw spark_ffi::Response::BadConfig;
+		throw spark_ffi::Error{
+			.kind = spark_ffi::ErrorType::BadConfig,
+			.message = strdup(fmt::format("Unknown idle mode: {}", (int)mode).c_str()),
+		};
 	}
 }
 
