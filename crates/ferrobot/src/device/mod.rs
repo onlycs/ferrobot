@@ -19,8 +19,8 @@ pub(crate) trait Command {
 }
 
 #[allow(private_bounds)]
-pub trait Device: DeviceFFI {
-    type Data: From<Self::DataFFI>;
+pub trait Device: DeviceFFI + Send + Sync + 'static {
+    type Data: for<'a> From<&'a Self::DataFFI> + Send + Sync + 'static;
 
     fn id(&self) -> u8;
 }

@@ -1,12 +1,12 @@
-use std::{collections::HashSet, ffi::c_void, sync::Arc};
+use std::{collections::HashMap, ffi::c_void, sync::LazyLock};
 
-use async_std::sync::RwLock;
+use async_std::{sync::RwLock, task};
+use futures::future::{self, BoxFuture};
 use thiserror::Error;
 
-use crate::{device::prelude::*, ffi::DeviceDatas};
+use crate::{device::prelude::*, event::Emitter, ffi::DeviceDatas};
 
 #[ffi_type(namespace = "ffi")]
-#[derive(Debug)]
 pub(crate) struct ContextFFI {
     pub(crate) devices: DeviceDatas,
 }
@@ -31,29 +31,49 @@ pub enum Error {
     DeviceAlreadyRegistered(device_ffi::Type, u8),
 }
 
-pub struct Context {
-    data: Arc<RwLock<Vec<device_ffi::Data>>>,
-    devices: Arc<RwLock<HashSet<device_ffi::Device>>>,
-}
+type DeviceFn = Arc<dyn (Fn(&device_ffi::Data) -> BoxFuture<'static, ()>) + Send + Sync>;
 
-lazy_static! {
-    static ref CONTEXT: Context = Context::new();
+pub(crate) struct Context {
+    data: Arc<RwLock<HashMap<device_ffi::Device, device_ffi::Data>>>,
+    emit_fns: Arc<RwLock<HashMap<device_ffi::Device, DeviceFn>>>,
 }
 
 impl Context {
     pub(crate) fn instance() -> &'static Context {
-        &CONTEXT
+        static INSTANCE: LazyLock<Arc<Context>> = LazyLock::new(|| Arc::new(Context::new()));
+        &INSTANCE
     }
 
     fn new() -> Self {
         Self {
-            data: Arc::new(RwLock::new(Vec::new())),
-            devices: Arc::new(RwLock::new(HashSet::new())),
+            data: Arc::new(RwLock::new(HashMap::new())),
+            emit_fns: Arc::new(RwLock::new(HashMap::new())),
         }
     }
 
     pub(crate) async fn replace(&self, ffi: DeviceDatas) {
-        *self.data.write().await = ffi.to_vec();
+        *self.data.write().await = ffi
+            .into_vec()
+            .into_iter()
+            .map(|data| (data.device, data))
+            .collect();
+
+        task::spawn(async move {
+            let context = Context::instance();
+            let data = context.data.read().await;
+            let emit_fns = context.emit_fns.read().await;
+            let mut futures = Vec::new();
+
+            for (device, data) in data.iter() {
+                let Some(handler) = emit_fns.get(device) else {
+                    continue;
+                };
+
+                futures.push(handler(data));
+            }
+
+            future::join_all(futures).await;
+        });
     }
 
     pub(crate) async fn command<D: Device>(
@@ -75,39 +95,52 @@ impl Context {
         let res = unsafe { handle_command(&command) };
 
         if res.ok {
-            return Ok(Ok(res.data as *const _));
+            return Ok(Ok(res.data.cast()));
         }
 
-        Ok(Err(res.data as *const _))
+        Ok(Err(res.data.cast()))
     }
 
-    pub(crate) async fn add_device<D: Device>(&self, device: &D) -> Result<(), Error> {
-        if self.device_exists(device).await {
+    pub(crate) async fn add_device<D: Device>(&self, device: &Arc<D>) -> Result<(), Error> {
+        let device = Arc::clone(device);
+        let device_ffi = (&*device).into();
+
+        if self.device_exists(&*device).await {
             return Err(Error::DeviceAlreadyRegistered(D::TYPE, device.id()));
         }
 
-        let mut devices = self.devices.write().await;
-        devices.insert(device.into());
+        let callback = Arc::new(move |data: &device_ffi::Data| {
+            let device = Arc::clone(&device);
+            let ptr = data.data.cast::<D::DataFFI>();
+            let deref = unsafe { &*ptr };
+            let data = Arc::new(deref.into());
+            Box::pin(Emitter::instance().emit_device(device, data)) as BoxFuture<'static, ()>
+        });
+
+        let mut devices = self.emit_fns.write().await;
+        devices.insert(device_ffi, callback);
 
         Ok(())
     }
 
     pub(crate) async fn device_exists<D: Device>(&self, device: &D) -> bool {
-        self.devices.read().await.contains(&device.into())
+        self.emit_fns.read().await.contains_key(&device.into())
     }
 
-    pub(crate) async unsafe fn data<'a, D: Device + 'static>(
-        &'a self,
-        device: &D,
-    ) -> Option<&'a D::DataFFI> {
+    pub(crate) async fn data<D: Device + 'static>(&self, device: &D) -> Option<D::Data> {
         let device = device.into();
-        let data = self.data.read().await;
-        let data = data.iter().find(|d| d.device == device)?;
-        let data = data.data as *const D::DataFFI;
 
-        unsafe { Some(&*data) }
+        let map = self.data.read().await;
+        let data = map.get(&device)?;
+        let ptr = data.data.cast::<D::DataFFI>();
+        let deref = unsafe { &*ptr };
+
+        Some(deref.into())
     }
 }
+
+unsafe impl Send for Context {}
+unsafe impl Sync for Context {}
 
 #[cfg(feature = "build")]
 pub(super) fn __ffi_inventory(builder: InventoryBuilder) -> InventoryBuilder {

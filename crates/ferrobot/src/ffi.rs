@@ -1,37 +1,30 @@
+use std::slice;
+
 use crate::device::prelude::*;
 
 #[ffi_type(namespace = "ffi")]
-#[derive(Debug)]
 pub(crate) struct DeviceDatas {
     data: *const device_ffi::Data,
-    len: u32,
-    cap: u32,
+    len: usize,
 }
 
 impl DeviceDatas {
-    pub(crate) fn to_vec(&self) -> Vec<device_ffi::Data> {
-        unsafe {
-            Vec::from_raw_parts(
-                self.data as *mut device_ffi::Data,
-                self.len as usize,
-                self.cap as usize,
-            )
-        }
+    #[allow(clippy::mut_from_ref)]
+    fn as_slice(&self) -> &mut [device_ffi::Data] {
+        unsafe { slice::from_raw_parts_mut(self.data.cast_mut(), self.len) }
     }
 
-    #[unsafe(no_mangle)]
-    pub(crate) unsafe extern "C" fn device_datas_free(self) {
-        unsafe {
-            Vec::<u8>::from_raw_parts(self.data as *mut u8, self.len as usize, self.cap as usize);
-        }
+    pub(crate) fn into_vec(self) -> Vec<device_ffi::Data> {
+        self.as_slice()
+            .iter_mut()
+            .map(device_ffi::Data::take)
+            .collect()
     }
 }
 
 impl Drop for DeviceDatas {
     fn drop(&mut self) {
-        unsafe {
-            Vec::<u8>::from_raw_parts(self.data as *mut u8, self.len as usize, self.cap as usize);
-        }
+        unsafe { libc::free(self.data as *mut _) }
     }
 }
 

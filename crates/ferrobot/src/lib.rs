@@ -1,9 +1,17 @@
-#![feature(error_generic_member_access)]
-#![allow(clippy::arc_with_non_send_sync)]
+#![feature(error_generic_member_access, downcast_unchecked)]
+#![warn(clippy::pedantic)]
+#![allow(
+    clippy::arc_with_non_send_sync,
+    incomplete_features,
+    clippy::missing_errors_doc,
+    clippy::missing_panics_doc,
+    async_fn_in_trait,
+    clippy::cast_precision_loss,
+    clippy::cast_possible_truncation
+)]
 
 extern crate async_std;
 extern crate interoptopus;
-#[macro_use] extern crate lazy_static;
 extern crate libc;
 extern crate log;
 extern crate thiserror;
@@ -12,10 +20,11 @@ extern crate uom;
 
 mod context;
 pub mod device;
+pub mod event;
 mod ffi;
 pub mod prelude;
 
-use std::thread;
+use std::{thread, time::Duration};
 
 use async_std::task;
 use context::Context;
@@ -23,6 +32,7 @@ use prelude::*;
 
 async fn main() {
     println!("Hello World!");
+    task::sleep(Duration::from_secs(0)).await;
 }
 
 #[allow(unused)]
@@ -59,6 +69,7 @@ pub mod build {
             .build()
     }
 
+    #[must_use]
     pub fn __ffi_interop() -> Interop {
         InteropBuilder::new()
             .inventory(__ffi_inventory())

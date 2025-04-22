@@ -1,4 +1,4 @@
-use std::ffi::c_void;
+use std::{ffi::c_void, ptr};
 
 use super::prelude::*;
 
@@ -31,6 +31,18 @@ impl<D: super::Device> From<&D> for Device {
 pub(crate) struct Data {
     pub(crate) device: Device,
     pub(crate) data: *const c_void,
+}
+
+impl Data {
+    /// Creates a new `Data` instance and invalidates the previous one.
+    pub(crate) fn take(&mut self) -> Self {
+        let data = self.data;
+        self.data = ptr::null();
+        Self {
+            device: self.device,
+            data,
+        }
+    }
 }
 
 impl Drop for Data {

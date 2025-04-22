@@ -1,3 +1,5 @@
+pub(crate) use std::sync::Arc;
+
 #[cfg(feature = "build")]
 pub(crate) use interoptopus::{extra_type, function, inventory::InventoryBuilder};
 pub(crate) use interoptopus::{ffi_function, ffi_type};

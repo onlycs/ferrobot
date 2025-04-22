@@ -5,7 +5,7 @@ pub mod prelude;
 use std::{backtrace::Backtrace, panic::Location};
 
 pub use config::*;
-pub use ffi::Error as FFIError;
+pub use ffi::{Error as FFIError, ErrorType as FFIErrorType};
 use prelude::*;
 use thiserror::Error;
 use uom::si::{angle::revolution, angular_velocity::revolution_per_minute as rpm};
@@ -17,6 +17,7 @@ use crate::context::Context;
 pub enum Error {
     #[error("Incorrect parameter for `set_output`: Expected -1.0 to 1.0, got {0}")]
     InvalidOutput(f64),
+
     #[error("At {location}: Context error: {source:?}")]
     Context {
         #[from]
@@ -24,6 +25,7 @@ pub enum Error {
         location: &'static Location<'static>,
         backtrace: Backtrace,
     },
+
     #[error("At {location}: FFI error: {source:?}")]
     FFI {
         #[from]
@@ -54,8 +56,8 @@ pub struct Data {
     pub current: ElectricCurrent,
 }
 
-impl From<spark_ffi::Data> for Data {
-    fn from(value: spark_ffi::Data) -> Self {
+impl<'a> From<&'a spark_ffi::Data> for Data {
+    fn from(value: &'a spark_ffi::Data) -> Self {
         Self {
             connected: value.connected,
             output: value.output,
@@ -72,20 +74,20 @@ pub struct SparkMax {
 }
 
 impl SparkMax {
-    pub async fn new(can_id: u8, config: SparkMaxConfig) -> Result<Self, Error> {
+    pub async fn new(can_id: u8, config: SparkMaxConfig) -> Result<Arc<Self>, Error> {
         let ctx = Context::instance();
-        let this = Self { can_id };
+        let this = Arc::new(Self { can_id });
         let command = spark_ffi::Command::create(config);
 
         ctx.add_device(&this).await?;
-        ctx.command(&this, command).await??;
+        ctx.command(&*this, command).await??;
 
         Ok(this)
     }
 
     pub async fn data(&self) -> Option<Data> {
         let ctx = Context::instance();
-        unsafe { ctx.data(self).await.copied().map(Data::from) }
+        ctx.data(self).await
     }
 
     pub async fn set_position(&self, position: Angle) -> Result<(), Error> {

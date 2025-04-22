@@ -57,10 +57,10 @@ impl Drop for Command {
     fn drop(&mut self) {
         match self.kind {
             CommandType::SetVelocity | CommandType::SetPosition | CommandType::SetOutput => unsafe {
-                mem::drop(Box::from_raw(self.data as *mut f64))
+                mem::drop(Box::from_raw(self.data as *mut f64));
             },
             CommandType::Create => unsafe {
-                mem::drop(Box::from_raw(self.data as *mut spark::SparkMaxConfig))
+                mem::drop(Box::from_raw(self.data as *mut spark::SparkMaxConfig));
             },
         }
     }
@@ -107,7 +107,7 @@ impl Clone for Error {
     fn clone(&self) -> Self {
         let c_str = self.message.as_c_str().unwrap();
         let message = unsafe {
-            let ptr = libc::malloc(c_str.to_bytes().len() + 1) as *mut c_char;
+            let ptr = libc::malloc(c_str.to_bytes().len() + 1).cast::<c_char>();
             libc::strcpy(ptr, c_str.as_ptr());
             CStr::from_ptr(ptr)
         };
@@ -126,7 +126,7 @@ impl Drop for Error {
         };
 
         unsafe {
-            let ptr = c_str.as_ptr() as *const c_char;
+            let ptr = c_str.as_ptr();
             if !ptr.is_null() {
                 libc::free(ptr as *mut libc::c_void);
             }
