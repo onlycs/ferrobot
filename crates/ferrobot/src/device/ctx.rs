@@ -1,24 +1,14 @@
-use std::{collections::HashMap, ffi::c_void, sync::LazyLock};
+use std::{collections::HashMap, sync::LazyLock};
 
 use async_std::{sync::RwLock, task};
 use futures::future::{self, BoxFuture};
 use thiserror::Error;
 
-use crate::{device::prelude::*, event::Emitter, ffi::DeviceDatas};
-
-#[ffi_type(namespace = "ffi")]
-pub(crate) struct ContextFFI {
-    pub(crate) devices: DeviceDatas,
-}
-
-#[ffi_type(namespace = "ffi")]
-pub(crate) struct Response {
-    ok: bool,
-    data: *const c_void,
-}
+use super::prelude::*;
+use crate::{event::Emitter, ffi::DeviceDatas};
 
 unsafe extern "C" {
-    fn handle_command(command: *const device_ffi::Command) -> Response;
+    fn handle_command(command: *const device_ffi::Command) -> ferrobot_ffi::Response;
 }
 
 #[allow(private_bounds, private_interfaces)]
@@ -31,24 +21,24 @@ pub enum Error {
     DeviceAlreadyRegistered(device_ffi::Type, u8),
 }
 
-type DeviceFn = Arc<dyn (Fn(&device_ffi::Data) -> BoxFuture<'static, ()>) + Send + Sync>;
+type Emit = Arc<dyn (Fn(&device_ffi::Data) -> BoxFuture<'static, ()>) + Send + Sync>;
 
-pub(crate) struct Context {
+pub(crate) struct DeviceContext {
     data: Arc<RwLock<HashMap<device_ffi::Device, device_ffi::Data>>>,
-    emit_fns: Arc<RwLock<HashMap<device_ffi::Device, DeviceFn>>>,
+    emitters: Arc<RwLock<HashMap<device_ffi::Device, Emit>>>,
 }
 
-impl Context {
-    pub(crate) fn instance() -> &'static Context {
-        static INSTANCE: LazyLock<Arc<Context>> = LazyLock::new(|| Arc::new(Context::new()));
+impl DeviceContext {
+    pub(crate) fn instance() -> &'static DeviceContext {
+        static INSTANCE: LazyLock<Arc<DeviceContext>> = LazyLock::new(DeviceContext::new);
         &INSTANCE
     }
 
-    fn new() -> Self {
-        Self {
+    fn new() -> Arc<Self> {
+        Arc::new(Self {
             data: Arc::new(RwLock::new(HashMap::new())),
-            emit_fns: Arc::new(RwLock::new(HashMap::new())),
-        }
+            emitters: Arc::new(RwLock::new(HashMap::new())),
+        })
     }
 
     pub(crate) async fn replace(&self, ffi: DeviceDatas) {
@@ -59,13 +49,13 @@ impl Context {
             .collect();
 
         task::spawn(async move {
-            let context = Context::instance();
-            let data = context.data.read().await;
-            let emit_fns = context.emit_fns.read().await;
+            let ctx = DeviceContext::instance();
+            let data = ctx.data.read().await;
+            let emitters = ctx.emitters.read().await;
             let mut futures = Vec::new();
 
             for (device, data) in data.iter() {
-                let Some(handler) = emit_fns.get(device) else {
+                let Some(handler) = emitters.get(device) else {
                     continue;
                 };
 
@@ -117,14 +107,14 @@ impl Context {
             Box::pin(Emitter::instance().emit_device(device, data)) as BoxFuture<'static, ()>
         });
 
-        let mut devices = self.emit_fns.write().await;
+        let mut devices = self.emitters.write().await;
         devices.insert(device_ffi, callback);
 
         Ok(())
     }
 
     pub(crate) async fn device_exists<D: Device>(&self, device: &D) -> bool {
-        self.emit_fns.read().await.contains_key(&device.into())
+        self.emitters.read().await.contains_key(&device.into())
     }
 
     pub(crate) async fn data<D: Device + 'static>(&self, device: &D) -> Option<D::Data> {
@@ -139,12 +129,5 @@ impl Context {
     }
 }
 
-unsafe impl Send for Context {}
-unsafe impl Sync for Context {}
-
-#[cfg(feature = "build")]
-pub(super) fn __ffi_inventory(builder: InventoryBuilder) -> InventoryBuilder {
-    builder
-        .register(extra_type!(ContextFFI))
-        .register(extra_type!(Response))
-}
+unsafe impl Send for DeviceContext {}
+unsafe impl Sync for DeviceContext {}

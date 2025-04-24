@@ -1,3 +1,4 @@
+pub(crate) mod ctx;
 mod ffi;
 pub mod prelude;
 pub mod spark;

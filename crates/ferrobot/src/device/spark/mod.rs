@@ -10,18 +10,16 @@ use prelude::*;
 use thiserror::Error;
 use uom::si::{angle::revolution, angular_velocity::revolution_per_minute as rpm};
 
-use crate::context::Context;
-
 #[allow(private_interfaces)]
 #[derive(Error, Debug)]
 pub enum Error {
     #[error("Incorrect parameter for `set_output`: Expected -1.0 to 1.0, got {0}")]
     InvalidOutput(f64),
 
-    #[error("At {location}: Context error: {source:?}")]
-    Context {
+    #[error("At {location}: device store error: {source:?}")]
+    DeviceStore {
         #[from]
-        source: context::Error,
+        source: device_ctx::Error,
         location: &'static Location<'static>,
         backtrace: Backtrace,
     },
@@ -75,7 +73,7 @@ pub struct SparkMax {
 
 impl SparkMax {
     pub async fn new(can_id: u8, config: SparkMaxConfig) -> Result<Arc<Self>, Error> {
-        let ctx = Context::instance();
+        let ctx = DeviceContext::instance();
         let this = Arc::new(Self { can_id });
         let command = spark_ffi::Command::create(config);
 
@@ -86,7 +84,7 @@ impl SparkMax {
     }
 
     pub async fn data(&self) -> Option<Data> {
-        let ctx = Context::instance();
+        let ctx = DeviceContext::instance();
         ctx.data(self).await
     }
 
@@ -94,7 +92,7 @@ impl SparkMax {
         debug!("Setting spark {} position to {:?}", self.can_id, position);
 
         let position = position.get::<revolution>();
-        let ctx = Context::instance();
+        let ctx = DeviceContext::instance();
         let command = spark_ffi::Command::set_position(position);
 
         ctx.command(self, command).await??;
@@ -105,7 +103,7 @@ impl SparkMax {
         debug!("Setting spark {} velocity to {:?}", self.can_id, velocity);
 
         let velocity = velocity.get::<rpm>();
-        let ctx = Context::instance();
+        let ctx = DeviceContext::instance();
         let command = spark_ffi::Command::set_velocity(velocity);
 
         ctx.command(self, command).await??;
@@ -119,7 +117,7 @@ impl SparkMax {
 
         debug!("Setting spark {} output to {}", self.can_id, output);
 
-        let ctx = Context::instance();
+        let ctx = DeviceContext::instance();
         let command = spark_ffi::Command::set_output(output);
 
         ctx.command(self, command).await??;

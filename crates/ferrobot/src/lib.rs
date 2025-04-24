@@ -18,7 +18,6 @@ extern crate thiserror;
 extern crate typed_builder;
 extern crate uom;
 
-mod context;
 pub mod device;
 pub mod event;
 mod ffi;
@@ -27,7 +26,7 @@ pub mod prelude;
 use std::{thread, time::Duration};
 
 use async_std::task;
-use context::Context;
+use device::ctx::DeviceContext;
 use prelude::*;
 
 async fn main() {
@@ -44,8 +43,8 @@ extern "C" fn start_thread() {
 
 #[allow(static_mut_refs, clippy::await_holding_lock, unused)]
 #[ffi_function(namespace = "ffi")]
-fn supply(context: context::ContextFFI) {
-    task::spawn(Context::instance().replace(context.devices));
+fn supply(context: ffi::FFIData) {
+    task::spawn(DeviceContext::instance().replace(context.devices));
 }
 
 #[cfg(feature = "build")]
@@ -60,7 +59,6 @@ pub mod build {
 
         builder = crate::device::__ffi_inventory(builder);
         builder = crate::ffi::__ffi_inventory(builder);
-        builder = crate::context::__ffi_inventory(builder);
 
         builder
             .register(function!(crate::supply))

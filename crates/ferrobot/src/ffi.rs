@@ -1,4 +1,4 @@
-use std::slice;
+use std::{ffi::c_void, slice};
 
 use crate::device::prelude::*;
 
@@ -31,7 +31,24 @@ impl Drop for DeviceDatas {
 unsafe impl Send for DeviceDatas {}
 unsafe impl Sync for DeviceDatas {}
 
+#[ffi_type(namespace = "ffi")]
+pub(crate) struct FFIData {
+    pub(crate) devices: DeviceDatas,
+}
+
+#[ffi_type(namespace = "ffi")]
+pub(crate) struct Response {
+    pub(crate) ok: bool,
+    pub(crate) data: *const c_void,
+}
+
+unsafe impl Send for Response {}
+unsafe impl Sync for Response {}
+
 #[cfg(feature = "build")]
 pub(crate) fn __ffi_inventory(builder: InventoryBuilder) -> InventoryBuilder {
-    builder.register(extra_type!(DeviceDatas))
+    builder
+        .register(extra_type!(DeviceDatas))
+        .register(extra_type!(FFIData))
+        .register(extra_type!(Response))
 }
