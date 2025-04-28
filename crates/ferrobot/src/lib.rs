@@ -18,8 +18,8 @@ extern crate thiserror;
 extern crate typed_builder;
 extern crate uom;
 
+pub mod control;
 pub mod device;
-pub mod event;
 mod ffi;
 pub mod prelude;
 

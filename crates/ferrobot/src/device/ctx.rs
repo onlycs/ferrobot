@@ -5,7 +5,7 @@ use futures::future::{self, BoxFuture};
 use thiserror::Error;
 
 use super::prelude::*;
-use crate::{event::Emitter, ffi::DeviceDatas};
+use crate::{control::event::Emitter, ffi::DeviceDatas};
 
 unsafe extern "C" {
     fn handle_command(command: *const device_ffi::Command) -> ferrobot_ffi::Response;

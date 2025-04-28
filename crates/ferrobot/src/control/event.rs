@@ -86,7 +86,7 @@ impl Emitter {
             trigger,
             Arc::new(move |data: Arc<Tr::Data>| {
                 let event = Arc::clone(&event);
-                let data = map(Arc::clone(&data));
+                let data = map(data);
                 Box::pin(Emitter::instance().emit(event, data))
             }),
         )
@@ -105,6 +105,9 @@ impl Emitter {
                     .await;
             }
         }
+
+        // drop event_ptr, leak bad
+        unsafe { drop(event_ptr.to_arc::<E>()) }
     }
 
     pub(crate) async fn emit_device<D: Device + 'static>(&self, event: Arc<D>, data: Arc<D::Data>) {
